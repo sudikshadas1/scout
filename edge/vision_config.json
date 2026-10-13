@@ -1,5 +1,5 @@
 {
-  "_comment": "Model team owns this file. Zones are normalized (0..1) polygons in the trap camera image, x left to right, y top to bottom. Placeholder values: redraw from a captured frame once the camera is mounted, together with the hardware team.",
+  "_comment": "Settings for edge/vision.py, owned by the model team. N and K: a cat must be seen in the trap zone in K of the last N frames. thresholds: minimum confidence per class. Zones are normalized (0..1) polygons, x left to right, y top to bottom. Status: thresholds are starting values and zones are PLACEHOLDERS. Later: Phase 2a set thresholds from training/eval.py's threshold sweep; Phase 2b redraw both zones from a frame of the mounted camera, with the hardware team.",
   "N": 5,
   "K": 4,
   "thresholds": {
@@ -11,6 +11,40 @@
     "other_animal": 0.5,
     "person": 0.4
   },
-  "trap_zone": [[0.35, 0.0], [1.0, 0.0], [1.0, 1.0], [0.35, 1.0]],
-  "doorway_zone": [[0.0, 0.0], [0.2, 0.0], [0.2, 1.0], [0.0, 1.0]]
+  "trap_zone": [
+    [
+      0.35,
+      0.0
+    ],
+    [
+      1.0,
+      0.0
+    ],
+    [
+      1.0,
+      1.0
+    ],
+    [
+      0.35,
+      1.0
+    ]
+  ],
+  "doorway_zone": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.2,
+      0.0
+    ],
+    [
+      0.2,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ]
 }

@@ -1,4 +1,11 @@
-"""Train a YOLO detector for one experiment (E1, E3, E5 ...). Run it through Slurm on PACE ICE.
+"""Trains the YOLO26n detector for one experiment and exports it to NCNN for the Pi.
+
+Purpose: One script for every training experiment in the plan (E1, E3, E5 ...), so runs are comparable.
+Status:  Written. Not yet run on real data (only the GPU smoke test uses Ultralytics directly).
+Later stages (still to add or change):
+  - Phase 2a: E1 (baseline fine-tune), E3 (augmentation choices) run as-is.
+  - Phase 2b: E5 fine-tunes on trap footage and needs data/scout_trap.yaml, which does not exist yet.
+  - If E2 (MobileNetV3 comparison) is run, it needs its own small script; this one is YOLO-only.
 
     python training/train_yolo.py --name E1 --data-yaml data/scout.yaml
     python training/train_yolo.py --name E5 --weights results/E3/weights/best.pt --data-yaml data/scout_trap.yaml --epochs 50

@@ -1,5 +1,8 @@
 #!/bin/bash
 # 3-epoch training on Ultralytics' tiny coco8 set: proves GPU + env + ultralytics work.
+# Purpose: first PACE job; confirms the GPU request and conda env before any real training.
+# Status:  Written, not yet run. Lines marked CHECK may need the PACE ICE GPU type.
+# Later:   nothing once it passes; keep it for checking the env after changes.
 #   sbatch training/slurm/smoke_test.sbatch   then   cat logs/smoke-<jobid>.out
 #SBATCH -J scout-smoke
 #SBATCH -N 1

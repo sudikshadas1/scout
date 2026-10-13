@@ -1,4 +1,5 @@
-# Training / data tools (PACE ICE or laptop)
+# Python packages for the data and training tools (PACE ICE or a laptop).
+# Installed by training/slurm/setup_env.sh. Add new packages here, not in the scripts.
 ultralytics>=8.4
 torch
 torchvision

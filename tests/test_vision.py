@@ -1,3 +1,10 @@
+"""Unit tests for the zone geometry and K-of-N voting in edge/vision.py.
+
+Purpose: Makes sure a cat is only reported in the trap when it really is, and doorway/non-cat cases are flagged.
+Status:  Passing.
+Later stages (still to add or change):
+  - Add cases when zones change shape or a second camera is added.
+"""
 import json
 
 import pytest

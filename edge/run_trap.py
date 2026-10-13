@@ -1,5 +1,12 @@
 """Main loop on the Pi: camera -> detector -> vision report -> gate controller -> hardware.
 
+Purpose: The integration point where model and hardware code meet.
+Status:  Loop runs on a laptop with --source. Hardware hooks at the bottom are placeholders.
+Later stages (still to add or change):
+  - Hardware team: fill in pir_motion(), plate_pressed() and apply(status) (servo, LEDs, alerts).
+  - Phase 2b: add logging of frames/reports to disk for staged trials and debugging.
+  - Phase 2b: idle/sleep mode woken by the PIR to save power.
+
 This is the integration point. The model team owns the vision steps; the hardware team fills in
 the three hardware hooks at the bottom (PIR, pressure plate, gate actuator / status).
 

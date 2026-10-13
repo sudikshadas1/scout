@@ -1,4 +1,9 @@
-"""Download the images listed in manifest.jsonl and write matching YOLO label files.
+"""Downloads the images listed in manifest.jsonl and writes one YOLO label file per image.
+
+Purpose: Turns the manifest into the folder layout Ultralytics trains on (data/scout.yaml points here).
+Status:  Written; label conversion tested. Full download not yet run.
+Later stages (still to add or change):
+  - Phase 2a: our own footage is already on disk, so it needs a copy/convert path instead of a download.
 
 Output (what data/scout.yaml points at):
     <data>/yolo/images/{train,val,test}/<stem>.jpg

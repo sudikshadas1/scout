@@ -1,4 +1,11 @@
-"""Image-level evaluation: cat recall and per-species false-positive rate, plus a threshold sweep.
+"""Measures cat recall and per-species false-positive rate (including empty backgrounds), plus a threshold sweep.
+
+Purpose: These are the numbers the plan and checkpoints report; they also pick the per-class thresholds in vision_config.json.
+Status:  Written. Not yet run on real data (E0 is the first run).
+Later stages (still to add or change):
+  - Phase 2a: add a seen-location vs new-location breakdown once splits.py has a seen-location split.
+  - Phase 2b: evaluate on our own trap footage and on the empty-trap check (no animal should be reported).
+  - Phase 3: run once on the frozen test set and record the final numbers.
 
 Works for any detector whose class names include "cat": the stock COCO model (experiment E0) or
 our fine-tuned 7-class model (E1+). Ground truth comes from the YOLO label files.

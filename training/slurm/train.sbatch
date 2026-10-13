@@ -1,5 +1,9 @@
 #!/bin/bash
-# Train one experiment. Pass the experiment name and any extra train_yolo.py flags:
+# Train one experiment on a PACE ICE GPU (wraps training/train_yolo.py).
+# Purpose: every experiment in the plan (E1, E3, E5 ...) runs through this same job.
+# Status:  Written, not yet run. Lines marked CHECK may need the GPU type and max walltime.
+# Later:   Phase 2b: E5 passes --data-yaml data/scout_trap.yaml once that file exists.
+# Pass the experiment name and any extra train_yolo.py flags:
 #   sbatch training/slurm/train.sbatch E1
 #   sbatch training/slurm/train.sbatch E5 --weights results/E3/weights/best.pt --epochs 50
 #SBATCH -J scout-train

@@ -1,4 +1,9 @@
-"""Scripted stand-in for the camera + detector, for CP1 and hardware testing.
+"""Feeds scripted fake detections through the real VisionAggregator and GateController.
+
+Purpose: Lets the hardware team test the servo and gate logic now, before any model is trained (CP1).
+Status:  Done and tested.
+Later stages (still to add or change):
+  - Hardware team: pass your own on_status to run() so the stub drives the real servo/LEDs.
 
 Fake detections go through the REAL VisionAggregator and GateController, so the hardware sees
 exactly the behaviour it will see once the trained model is plugged in. One token per frame:

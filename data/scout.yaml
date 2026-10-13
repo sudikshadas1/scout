@@ -1,4 +1,7 @@
-# Ultralytics dataset config. build_yolo.py writes images/labels under `path`.
+# Ultralytics dataset config: tells training where the images/labels are and the class names.
+# download_images.py writes images/labels under `path`.
+# Status: done for public data. Class order must match data/common.py CLASSES.
+# Later:  Phase 2b: add a separate scout_trap.yaml for fine-tuning on our own trap footage (E5).
 # Point `path` at the YOLO folder on PACE scratch (or pass a copy with the right path).
 path: ~/scratch/scout_data/yolo
 train: images/train

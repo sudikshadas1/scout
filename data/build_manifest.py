@@ -1,4 +1,11 @@
-"""Choose which images go into the YOLO dataset and with which boxes, without downloading anything.
+"""Chooses which images go into the YOLO dataset and with which boxes, without downloading anything.
+
+Purpose: Controls class balance, background (empty) images and near-duplicate camera bursts before training.
+Status:  Written and tested on fake data. Ratios are starting values, not tuned.
+Later stages (still to add or change):
+  - Phase 1: check the output counts after the first real run; adjust --ratio / --bg-frac if a class is tiny.
+  - Phase 2a: add our own trap footage rows (dataset='trap') once it is labeled.
+  - Phase 2b: experiments E4/E5 may need a separate manifest (e.g. trap-only fine-tuning set).
 
 Writes <data>/manifest.jsonl, one line per image:
     {"dataset", "file_name", "url", "split", "stem", "width", "height", "boxes": [[cls, x, y, w, h], ...]}

@@ -1,3 +1,10 @@
+"""Unit tests for the gate controller's rules (close, cooldown, latch, fault, pressure plate).
+
+Purpose: Protects the safety rules from being broken by later changes.
+Status:  Passing.
+Later stages (still to add or change):
+  - Hardware team: add a test for each new rule added to gate.py.
+"""
 from edge.gate import Command, GateController, GateState
 from edge.vision import VisionReport
 

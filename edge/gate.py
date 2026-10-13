@@ -1,4 +1,10 @@
-"""Gate controller (owned by the HARDWARE team). Reference version written with the model team.
+"""Decides when to close the gate from the VisionReport, the pressure plate and safety rules.
+
+Purpose: Keeps the closing decision on the hardware side, separate from the model.
+Status:  Reference version, tested (tests/test_gate.py). Owned by the hardware team; rules may change.
+Later stages (still to add or change):
+  - Hardware team: confirm whether the pressure plate is fitted (require_plate) and tune cooldown/timeout.
+  - Add any new safety rules here (e.g. max time armed, low battery -> disarm).
 
 The gate controller decides WHEN to close. It combines:
   * the VisionReport from edge/vision.py (what the camera sees)

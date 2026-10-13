@@ -1,4 +1,10 @@
-"""Count images per species (and per our 7 classes), per dataset, before downloading images.
+"""Prints images per species and per class (and how many have boxes) for each dataset.
+
+Purpose: Gives the real counts the plan needs to choose class balance and confirm we have enough cats.
+Status:  Written and tested on fake data. Not yet run on the real metadata.
+Later stages (still to add or change):
+  - Phase 1: run it and record the counts in the plan doc.
+  - Phase 2a: also count our own trap footage once it is labeled.
 
     python data/stats.py --data ~/scratch/scout_data
 """

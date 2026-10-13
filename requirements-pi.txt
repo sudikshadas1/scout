@@ -1,4 +1,6 @@
-# On the Raspberry Pi 5 (Raspberry Pi OS 64-bit). picamera2 comes preinstalled with the OS:
+# Python packages for the code in edge/ on the Raspberry Pi 5 (Raspberry Pi OS 64-bit).
+# Status: not yet installed on the Pi. Hardware libraries (servo, GPIO) get added here when chosen.
+# picamera2 comes preinstalled with the OS:
 # create the venv with --system-site-packages so it is visible.
 ultralytics>=8.4
 ncnn

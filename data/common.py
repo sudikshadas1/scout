@@ -1,4 +1,12 @@
-"""Shared helpers for the LILA camera-trap datasets (COCO Camera Traps format)."""
+"""Shared class list (our 7 classes), species-name -> class mapping, and a small reader for COCO Camera Traps JSON files.
+
+Purpose: Every data and training script imports this so the whole project agrees on one class list and one mapping.
+Status:  Done and tested on fake data (tests/test_data.py). Mapping not yet checked against the real species names.
+Later stages (still to add or change):
+  - Phase 1: after stats.py runs on the real metadata, add any species names that land in the wrong class.
+  - Phase 2a: our own trap footage needs a reader here (or a converter into this same JSON format).
+  - If the class list ever changes, also update edge/vision.py CLASSES, data/scout.yaml and vision_config.json.
+"""
 from __future__ import annotations
 
 import json

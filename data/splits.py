@@ -1,4 +1,11 @@
-"""Freeze location-based train / val / test splits so no camera appears in two splits.
+"""Freezes location-based train / val / test splits so no camera location is in two splits.
+
+Purpose: Stops the model from memorizing backgrounds: test locations are never seen in training (plan: background-learning safeguards).
+Status:  Written and tested on fake data. Not yet run; data/splits.json not yet committed.
+Later stages (still to add or change):
+  - Phase 1: run once on PACE and commit data/splits.json. Do not change it afterwards.
+  - Phase 2a: add a seen-location split (held-out images from training locations) to compare seen vs new locations.
+  - Phase 2a: add our own trap footage, split by recording session or day, never by individual frame.
 
 CCT: LILA's recommended split file gives train and val *locations*. We keep LILA train as our
 train, and split LILA's val locations in half (seeded) into our val and our frozen test set.

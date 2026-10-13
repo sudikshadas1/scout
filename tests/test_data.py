@@ -1,4 +1,10 @@
-"""Runs the data pipeline end to end on a tiny fake COCO Camera Traps dataset (no network)."""
+"""Runs the data pipeline end to end on a tiny fake dataset (no network).
+
+Purpose: Catches mapping, split and label bugs before spending PACE time on the real data.
+Status:  Passing.
+Later stages (still to add or change):
+  - Add a test for own-footage ingestion and the seen-location split once they exist.
+"""
 import json
 import subprocess
 import sys

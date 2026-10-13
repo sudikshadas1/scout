@@ -1,0 +1,4 @@
+# Store and check out text files with Linux line endings (LF) on every OS,
+# so scripts run on PACE and the Pi even when edited on Windows.
+* text=auto eol=lf
+*.bat text eol=crlf

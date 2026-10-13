@@ -3,7 +3,9 @@
 An edge-AI add-on for humane live traps used in Trap-Neuter-Return (TNR). A camera and a Raspberry Pi 5 recognize what walks into the trap, and the gate closes only for a cat that is fully inside.
 
 CS 4605 Mobile & Ubiquitous Computing, Fall 2026, Group 29. Mentor: Christine Taylor.
-Team: Sudiksha Das and Henry Poulin (model), Keshav Sheth and Sowmiyan Nattamai Vijayakumar (hardware)
+Team: Sudiksha Das and Henry Poulin (model), Keshav Sheth and Sowmiyan Nattamai Vijayakumar (hardware).
+
+Design docs: [SCOUT - Research/Notes](https://docs.google.com/document/d/1BFhBik9DCZgdWnCy8yDcnWfe-6-JuTAZf1hQFuI_Fq8/edit) (CV Model tab: the plan; Code Base tab: how this code maps to it).
 
 ## How it works
 
@@ -139,41 +141,50 @@ python -m edge.run_trap --model yolo26n_ncnn_model
 
 ## Project phases
 
-The project runs in four phases. Each ends at a class checkpoint with a clear finish line. **We are in Phase 1.**
+The project runs in phases, each ending at a class checkpoint. **We are in Phase 1.** Recording our own trap footage starts early, because a model trained on trail cameras (far away) may fail on our camera (inches from the animal). This is the biggest risk. Details: CV Model tab, sections 10 and 13.
 
-| Phase | Dates | Goal | Finish line (checkpoint) |
+| Phase | Dates | Goal | Finish line |
 | --- | --- | --- | --- |
-| **1. Foundations** | Now to Oct 23 | Everything set up; no trained model yet | **CP1:** gate closes from the stub; data split; E0 baseline; first Pi latency number |
-| 2. Train + collect our data | Oct 26 to Nov 13 | Trained model running on the Pi in the real trap | **CP2:** camera to servo end to end on the bench |
-| 3. Validate + freeze | Nov 16 to Nov 24 | Final numbers and a frozen model | **CP3:** 50+ staged trials logged; test-set metrics recorded |
-| 4. Demo | Nov 30 to Dec 8 | Show it working | **Demo Day:** live labeling of never-seen images; gate acts correctly |
+| **1. Get set up** | Now to Oct 23 | Data ready, baseline numbers, first look up close | **CP1:** data split; E0 baseline; footage pilot done; Pi speed number; gate closes from the stub |
+| 2a. First recording round + public data | Oct 26 to Nov 1 | Our own labeled trap pictures; first trained models | About 750 labeled trap pictures; E1 to E3 results |
+| 2b. Fine-tune, then fix what fails | Nov 2 to Nov 13 | Trained model on the Pi in the real trap | **CP2:** camera to servo end to end on the bench |
+| 3. Test and freeze | Nov 16 to Nov 24 | Final numbers and a frozen model | **CP3:** final test results; 50+ staged trials |
+| 4. Demo | Nov 30 to Dec 8 | Show it working | **Demo Day:** live labeling of never-seen pictures; gate acts correctly |
 
 ### Phase 1 checklist
 
 Done:
-- [x] Architecture, model/hardware split and interface agreed
+- [x] CV plan, model/hardware split and interface agreed
 - [x] Base code written and tested (17 tests pass)
-- [x] GitHub repo created
+- [x] GitHub repo created and base code pushed
 
 To do:
-- [ ] Push the base code and add all team members as collaborators
-- [ ] PACE ICE env + smoke test: `bash training/slurm/setup_env.sh`, then `sbatch training/slurm/smoke_test.sbatch`
-- [ ] Download metadata and count species: `fetch_metadata.py`, `stats.py`
-- [ ] Freeze location splits and commit `data/splits.json`
-- [ ] Build the balanced image list and download images onto PACE scratch: `sbatch training/slurm/data.sbatch`
-- [ ] E0 baseline: `python training/eval.py --model yolo26n.pt --data $DATA --split val --n 500 --name E0`
-- [ ] Pi 5 + camera bring-up and first latency numbers: `python -m edge.bench`
-- [ ] Servo closes from `python -m edge.stub` (CP1 depends on this)
-- [ ] Decide camera mount position, IR illuminator for night, and whether the pressure plate is in
-- [ ] Meet with Christine: camera position, permission to film pets, PACE storage
+- [ ] Add all team members as collaborators
+- [ ] PACE ICE setup + test job: `bash training/slurm/setup_env.sh`, then `sbatch training/slurm/smoke_test.sbatch`
+- [ ] Download the labels and count pictures per animal: `fetch_metadata.py`, then `stats.py`
+- [ ] Split by camera location and commit `data/splits.json`: `splits.py`
+- [ ] Download the pictures onto PACE: `sbatch training/slurm/data.sbatch`
+- [ ] E0 baseline (stock model, no training): `python training/eval.py --model yolo26n.pt --data $DATA --split val --n 500 --name E0`
+- [ ] Footage pilot: mount one camera in the real trap, take 50 to 100 pictures (stuffed cat, tablet photo, empty trap), and run the stock model on them
+- [ ] Laptop prototype: webcam, then model, then boxes and the report on screen (also the viewer for the footage pilot)
+- [ ] Pi 5 + camera speed test: `python -m edge.bench`
+- [ ] Hardware team closes the servo from `python -m edge.stub` (CP1 depends on this)
+- [ ] Decide the camera position, buy infrared lights for night, and decide whether the pressure plate is in
+
+### Making sure the model learns cats, not backgrounds
+
+Test pictures always come from camera locations the model never trained on (`splits.py`), about 10% of training pictures are empty, and near-identical burst photos are limited (`build_manifest.py`). In our own trap footage, every session includes cats, non-cats and the empty trap, so "inside the trap" never means "cat". Details: CV Model tab, section 7.
 
 ### Code status
 
-- **Done:** vision/gate interface, hardware stub and tests (17 pass).
+- **Done and tested:** vision/gate interface, hardware stub, tests (17 pass).
 - **Written, needs real data:** data pipeline (tested on fake data), training and evaluation scripts.
 - **Written, tested on a laptop:** Pi benchmark and main loop.
-- **Not started:** trained model (Phase 2). Trap and doorway zones are placeholders until the camera is mounted.
+- **Still to write:** laptop prototype / picture viewer, Pi recording script for our footage, adding our labeled footage to the dataset, seen-location vs new-location score report, MobileNetV3 comparison (E2), black-and-white data (E4), trap/doorway area drawing tool.
+- **Placeholders:** trap and doorway areas in `edge/vision_config.json`, until the camera is mounted.
+
+Every file starts with a short header: what it does, its purpose, its status, and what still needs to be added or changed in later phases. Read that first before editing a file.
 
 ## Later: ear-tip detection
 
-Recognizing already-neutered (ear-tipped) cats is a later stretch goal, after the cat detector works end to end. It would be a second small classifier on the cat's head crop.
+Recognizing already-neutered (ear-tipped) cats is a later goal, after the cat detector works end to end.

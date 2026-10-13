@@ -1,4 +1,11 @@
-"""Per-stage latency benchmark on the Pi (or a laptop, with --source).
+"""Times every stage (capture, detector, aggregation, gate) on the Pi or a laptop and writes a CSV.
+
+Purpose: Gives the latency numbers the plan needs and checks the Pi 5 can keep up with ~5 fps.
+Status:  Written; tested on a laptop with --source. Not yet run on the Pi 5 with the camera.
+Later stages (still to add or change):
+  - Phase 1: first run on the Pi 5 with stock yolo26n (NCNN, 416).
+  - Phase 2a: rerun with our trained model; try imgsz 320 if too slow.
+  - Phase 2a: a recording script for trap footage can reuse the Camera class here (not written yet).
 
 Stages logged per frame: capture, detector (preprocess / inference / postprocess), vision
 aggregation, gate controller, total. Writes a CSV and prints median / p95 in milliseconds.
