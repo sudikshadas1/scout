@@ -1,0 +1,9 @@
+# Training / data tools (PACE ICE or laptop)
+ultralytics>=8.4
+torch
+torchvision
+numpy
+pandas
+requests
+tqdm
+pytest

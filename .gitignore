@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# data and weights never go in git
+*.pt
+*_ncnn_model/
+*.onnx
+data/raw/
+data/yolo/
+*.jpg
+*.png
+*.zip
+*.tar.gz
+
+# experiment outputs: keep metrics, not weights
+results/*/weights/
+runs/

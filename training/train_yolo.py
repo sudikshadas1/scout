@@ -1,0 +1,60 @@
+"""Train a YOLO detector for one experiment (E1, E3, E5 ...). Run it through Slurm on PACE ICE.
+
+    python training/train_yolo.py --name E1 --data-yaml data/scout.yaml
+    python training/train_yolo.py --name E5 --weights results/E3/weights/best.pt --data-yaml data/scout_trap.yaml --epochs 50
+
+Outputs land in results/<name>/ (weights are git-ignored; metrics and plots are kept).
+"""
+import argparse
+import json
+from pathlib import Path
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--name", required=True, help="experiment id from the plan, e.g. E1")
+    ap.add_argument("--weights", default="yolo26n.pt", help="starting weights (COCO-pretrained by default)")
+    ap.add_argument("--data-yaml", default="data/scout.yaml")
+    ap.add_argument("--imgsz", type=int, default=640)
+    ap.add_argument("--epochs", type=int, default=100)
+    ap.add_argument("--patience", type=int, default=20)
+    ap.add_argument("--batch", type=int, default=32)
+    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--device", default="0")
+    ap.add_argument("--export-imgsz", type=int, default=416, help="also export NCNN at this size (0 = skip)")
+    args = ap.parse_args()
+
+    from ultralytics import YOLO
+
+    model = YOLO(args.weights)
+    model.train(
+        data=args.data_yaml,
+        imgsz=args.imgsz,
+        epochs=args.epochs,
+        patience=args.patience,
+        batch=args.batch,
+        workers=args.workers,
+        device=args.device,
+        # augmentations matched to an in-trap camera (plan, "Training and experiments")
+        hsv_v=0.5,          # strong brightness changes: IR LEDs, dusk
+        hsv_s=0.5,
+        degrees=0.0,
+        flipud=0.0,         # animals are never upside down
+        fliplr=0.5,
+        scale=0.5,
+        close_mosaic=10,
+        project="results",
+        name=args.name,
+        exist_ok=True,
+    )
+    metrics = model.val(data=args.data_yaml, split="val", imgsz=args.imgsz)
+    summary = {"name": args.name, "weights_start": args.weights, "map50": metrics.box.map50,
+               "map50_95": metrics.box.map, "args": vars(args)}
+    Path("results", args.name, "summary.json").write_text(json.dumps(summary, indent=1, default=str))
+    if args.export_imgsz:
+        model.export(format="ncnn", imgsz=args.export_imgsz)
+    print(json.dumps(summary, indent=1, default=str))
+
+
+if __name__ == "__main__":
+    main()

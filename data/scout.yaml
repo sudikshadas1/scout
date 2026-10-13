@@ -1,0 +1,15 @@
+# Ultralytics dataset config. build_yolo.py writes images/labels under `path`.
+# Point `path` at the YOLO folder on PACE scratch (or pass a copy with the right path).
+path: ~/scratch/scout_data/yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: cat
+  1: raccoon
+  2: opossum
+  3: squirrel
+  4: dog
+  5: other_animal
+  6: person

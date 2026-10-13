@@ -1,0 +1,16 @@
+{
+  "_comment": "Model team owns this file. Zones are normalized (0..1) polygons in the trap camera image, x left to right, y top to bottom. Placeholder values: redraw from a captured frame once the camera is mounted, together with the hardware team.",
+  "N": 5,
+  "K": 4,
+  "thresholds": {
+    "cat": 0.5,
+    "raccoon": 0.4,
+    "opossum": 0.4,
+    "squirrel": 0.4,
+    "dog": 0.4,
+    "other_animal": 0.5,
+    "person": 0.4
+  },
+  "trap_zone": [[0.35, 0.0], [1.0, 0.0], [1.0, 1.0], [0.35, 1.0]],
+  "doorway_zone": [[0.0, 0.0], [0.2, 0.0], [0.2, 1.0], [0.0, 1.0]]
+}

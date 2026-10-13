@@ -1,0 +1,5 @@
+# On the Raspberry Pi 5 (Raspberry Pi OS 64-bit). picamera2 comes preinstalled with the OS:
+# create the venv with --system-site-packages so it is visible.
+ultralytics>=8.4
+ncnn
+numpy
