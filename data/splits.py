@@ -66,9 +66,20 @@ def main() -> None:
     half = len(val_locs) // 2
     cct = {"train": sorted(lila["train"]), "val": sorted(val_locs[:half]), "test": sorted(val_locs[half:])}
 
+    # ENA24 has no camera location or sequence metadata.
+    # Use all ENA24 images for supplemental training only.
+    # Keep the keys consistent with build_manifest.py.
     ena = CocoCT(meta / "ena24.json")
-    ena_groups = [group_key(img) for img in ena.images.values()]
-    ena_split = split_groups(ena_groups, seed=args.seed)
+
+    ena_split = {
+        "train": sorted(group_key(img) for img in ena.images.values()),
+        "val": [],
+        "test": [],
+    }
+
+    # ena = CocoCT(meta / "ena24.json")
+    # ena_groups = [group_key(img) for img in ena.images.values()]
+    # ena_split = split_groups(ena_groups, seed=args.seed)
 
     out = {"seed": args.seed, "cct": cct, "ena24": ena_split}
     Path(args.out).write_text(json.dumps(out, indent=1))
