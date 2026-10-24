@@ -5,7 +5,7 @@ An edge-AI add-on for humane live traps used in Trap-Neuter-Return (TNR). A came
 CS 4605 Mobile & Ubiquitous Computing, Fall 2026, Group 29. Mentor: Christine Taylor.
 Team: Sudiksha Das and Henry Poulin (model), Keshav Sheth and Sowmiyan Nattamai Vijayakumar (hardware).
 
-Design docs: [SCOUT - Research/Notes](https://docs.google.com/document/d/1BFhBik9DCZgdWnCy8yDcnWfe-6-JuTAZf1hQFuI_Fq8/edit). The **CV Model** tab is the plan, the **Code Base** tab maps this code to it, the **CV Team - Next Steps** tab is the step-by-step runbook, and the **High Level Plan** tab has the dated status.
+Design docs: [SCOUT - Research/Notes](https://docs.google.com/document/d/1BFhBik9DCZgdWnCy8yDcnWfe-6-JuTAZf1hQFuI_Fq8/edit). The **CV Model** tab is the plan, the **Code Base Guide** tab maps this code to it, the **CV Team - Next Steps** tab is the step-by-step runbook, and the **High Level Plan** tab has the dated status.
 
 **How we evaluate** (plan section 12). No live animals are used this semester; every trial in our trap is staged with props. So the evaluation has two parts:
 
@@ -195,7 +195,7 @@ The plan's E3 ("add ENA24") is already part of E1. Only 2% of the 25% false-posi
 
 ### Decisions on Oct 24
 
-**Cutoff and vote.** The trap acts on a vote across frames, not on one picture. With the old settings (cat cutoff 0.5, 4-of-5 vote), `training/vote_sim.py` estimates E1 would trigger on only about 9% of cats. The config is now cutoff 0.15 with a 3-of-5 vote: an estimated 68% at the trap level and about 0.01% false positives. The estimate assumes frames are independent, so re-measure it on real clips with `vote_sim.py clips`, which also replays the real gate.
+**Cutoff and vote.** The trap acts on a vote across frames, not on one picture. With the old settings (cat cutoff 0.5, 4-of-5 vote), `training/vote_sim.py` estimates E1 would trigger on only about 9% of cats. The config is now cutoff 0.15 with a 3-of-5 vote: an estimated 68% at the trap level and about 0.01% false positives. The estimate assumes frames are independent, so re-measure it on staged clips with `vote_sim.py clips`, which also replays the real gate.
 
 **One animal, one label.** If the model labeled the same cat "cat" and also "opossum" in one frame, the gate entered its 10-second non-cat cooldown and never closed on that cat. Now the weaker label on the same box is dropped, but only when the stronger one is at least 0.1 more confident. Close calls keep both, so a possible non-cat still holds the gate open (`same_animal_iou`, `same_animal_margin` in `vision_config.json`).
 
@@ -261,8 +261,8 @@ Each phase ends at a class checkpoint. Dates updated Oct 24: recording round 1 m
 | Phase | Dates | Finish line | Status |
 | --- | --- | --- | --- |
 | 1. Get set up | to Oct 23 (CP1) | data split; E0; footage pilot; Pi speed number; servo closes from the stub | data, E0 and laptop demo done; pilot, Pi number and servo still open |
-| 2a. Public data + recording round 1 | to Oct 31 | about 750 labeled trap pictures; E1, E1b, E1c, E2 | E1 done; the rest ready to run |
-| 2b. Fine-tune and fix what fails | Nov 2 to Nov 13 (CP2) | E5 on our footage; camera to servo end to end on the bench | |
+| 2a. Public data + recording round 1 | to Oct 31 | about 750 labeled prop pictures; E1, E1b, E1c, E2 | E1 done; the rest ready to run |
+| 2b. Fine-tune and fix what fails | Nov 2 to Nov 13 (CP2) | E5 on our prop footage; camera to servo end to end on the bench | |
 | 3. Test and freeze | freeze by Nov 16; CP3 Nov 24 | final numbers; 50+ staged trials | |
 | 4. Demo | Dec 2 to 8 | live labeling of new pictures; gate acts correctly | |
 
@@ -287,7 +287,7 @@ Test pictures always come from camera locations the model never trained on (`spl
 - **Still to write:** black-and-white training data (E4), second-camera support.
 - **Placeholders:** the trap and doorway zones in `edge/vision_config.json`, until the camera is mounted.
 
-Every file starts with a short header: what it does, its purpose, its status, and what still needs to change. Read it before editing a file.
+Every file starts with a short header: what it does, its status, and what still needs to change. Read it before editing.
 
 ## Later: ear-tip detection
 
