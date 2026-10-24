@@ -60,7 +60,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
     ap.add_argument("--data", required=True, help="data folder containing yolo/")
-    ap.add_argument("--split", default="val", choices=["train", "val", "test"])
+    ap.add_argument("--split", default="val", choices=["train", "val", "test", "seen"])
     ap.add_argument("--n", type=int, default=0, help="sample N images (half cats); 0 = all")
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--thr", type=float, default=0.25, help="threshold reported in metrics.json")
