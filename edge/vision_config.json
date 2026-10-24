@@ -1,5 +1,5 @@
 {
-  "_comment": "Settings for edge/vision.py, owned by the model team. N and K: a cat must be seen in the trap zone in K of the last N frames. thresholds: minimum confidence per class. Zones are normalized (0..1) polygons, x left to right, y top to bottom. Status: Oct 24, cat cutoff lowered 0.5 -> 0.15 and vote 4-of-5 -> 3-of-5 from training/vote_sim.py on E1 (estimated trap-level recall 9% -> 68%, trap false-positive rate ~0.01%). Re-check with vote_sim.py clips once pilot clips exist. Zones are PLACEHOLDERS until the camera is mounted: redraw with python -m edge.draw_zones.",
+  "_comment": "Settings for edge/vision.py, owned by the model team. N and K: a cat must be seen in the trap zone in K of the last N frames. thresholds: minimum confidence per class. Zones are normalized (0..1) polygons, x left to right, y top to bottom. Status: Oct 24, cat cutoff lowered 0.5 -> 0.15 and vote 4-of-5 -> 3-of-5 from training/vote_sim.py on E1 (estimated trap-level recall 9% -> 68%, trap false-positive rate ~0.01%). Re-check with vote_sim.py clips once pilot clips exist. Zones are PLACEHOLDERS until the camera is mounted: redraw with python -m edge.draw_zones. same_animal_iou: two boxes of different classes overlapping this much are one animal; the weaker label is dropped only if the stronger one is at least same_animal_margin more confident (close calls keep both, so a non-cat still holds the gate open).",
   "N": 5,
   "K": 3,
   "thresholds": {
@@ -46,5 +46,7 @@
       0.0,
       1.0
     ]
-  ]
+  ],
+  "same_animal_iou": 0.6,
+  "same_animal_margin": 0.1
 }

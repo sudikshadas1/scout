@@ -44,6 +44,11 @@ def test_replay_uses_real_aggregator():
     assert replay(frames, 0.25, 5, 3, cfg, full_frame=True)
     assert not replay(frames, 0.25, 5, 4, cfg, full_frame=True)
     assert not replay(frames, 0.5, 5, 3, cfg, full_frame=True)  # below the cutoff
+    assert replay(frames, 0.25, 5, 3, cfg, full_frame=True, gate=True)
+    # a raccoon in the first frame puts the gate in cooldown: the vote fires but the gate stays open
+    racc = [[Detection("raccoon", 0.9, (0.1, 0.1, 0.3, 0.3))], cat, cat, cat]
+    assert replay(racc, 0.25, 5, 3, cfg, full_frame=True)
+    assert not replay(racc, 0.25, 5, 3, cfg, full_frame=True, gate=True)
 
 
 # ---- seen-location split

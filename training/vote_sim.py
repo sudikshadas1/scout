@@ -16,7 +16,8 @@ Two modes:
    --clips holds one subfolder per staged trial, named by what was in it: cat_*, raccoon_*, opossum_*,
    empty_*, ... Each subfolder holds that trial's frames in time order (demo.py --save-dir writes these).
    The model runs once per frame; every cutoff x vote setting is then replayed through the real
-   VisionAggregator, so the numbers are what the trap would do. --full-frame ignores the zones (use it until
+   VisionAggregator AND the real GateController (non-cat cooldown, doorway check), so "gate closed on cat
+   clips" is what a staged trial would score. --full-frame ignores the zones (use it until
    the camera is mounted and the zones are drawn).
 
 Writes results/<name>/vote_sweep.csv.
@@ -52,14 +53,30 @@ def sweep_rows(sweep: list[dict]) -> list[dict]:
     return rows
 
 
-def replay(frames: list[list], cutoff: float, n: int, k: int, cfg: dict, full_frame: bool) -> bool:
-    """Run one clip's per-frame detections through the real aggregator. True if cat_in_trap ever fires."""
+def replay(frames: list[list], cutoff: float, n: int, k: int, cfg: dict, full_frame: bool,
+           gate: bool = False, fps: float = 5.0) -> bool:
+    """Run one clip's per-frame detections through the real aggregator (and, with gate=True, the real gate).
+
+    Returns True if cat_in_trap ever fires (gate=False) or if the gate closes (gate=True). The gate adds the
+    non-cat cooldown and the doorway check, so it is the number a staged trial actually scores.
+    """
+    from edge.gate import Command, GateController
     from edge.vision import VisionAggregator
     thr = dict(cfg.get("thresholds", {}))
     thr["cat"] = cutoff
     zones = {} if full_frame else {"trap_zone": cfg.get("trap_zone"), "doorway_zone": cfg.get("doorway_zone")}
-    v = VisionAggregator(N=n, K=k, thresholds=thr, **zones)
-    return any(v.update(dets).cat_in_trap for dets in frames)
+    v = VisionAggregator(N=n, K=k, thresholds=thr, same_animal_iou=cfg.get("same_animal_iou", 0.6),
+                         same_animal_margin=cfg.get("same_animal_margin", 0.1), **zones)
+    if not gate:
+        return any(v.update(dets).cat_in_trap for dets in frames)
+    t = [0.0]
+    g = GateController(clock=lambda: t[0])
+    g.arm()
+    for dets in frames:
+        t[0] += 1.0 / fps
+        if g.tick(v.update(dets)).command == Command.CLOSE:
+            return True
+    return False
 
 
 def main() -> None:
@@ -96,11 +113,16 @@ def main() -> None:
         rows = []
         for cutoff, (n, k) in product(CUTOFFS, VOTES):
             fired = [(is_cat, kind, replay(fr, cutoff, n, k, cfg, args.full_frame)) for is_cat, kind, fr in data]
+            closed = [(is_cat, replay(fr, cutoff, n, k, cfg, args.full_frame, gate=True)) for is_cat, _, fr in data]
             cats = [f for c_, _, f in fired if c_]
             non = [f for c_, _, f in fired if not c_]
+            gc = [f for c_, f in closed if c_]
+            gn = [f for c_, f in closed if not c_]
             rows.append({"cutoff": cutoff, "N": n, "K": k,
                          "trap_recall": sum(cats) / len(cats) if cats else None,
                          "trap_fpr": sum(non) / len(non) if non else None,
+                         "gate_closed_on_cat": sum(gc) / len(gc) if gc else None,
+                         "gate_closed_on_noncat": sum(gn) / len(gn) if gn else None,
                          "n_cat_clips": len(cats), "n_noncat_clips": len(non),
                          "noncat_fired": ",".join(sorted({kd for c_, kd, f in fired if not c_ and f}))})
         out = Path("results") / args.name
@@ -118,7 +140,12 @@ def main() -> None:
     print(f"\nbest settings with trap false-positive rate <= 25% ({'independent-frame estimate' if args.mode == 'sweep' else 'measured on clips'}):")
     print(f"  {'cutoff':>6} {'vote':>6} {'trap recall':>12} {'trap FPR':>9}")
     for r in ok[:8]:
-        print(f"  {r['cutoff']:6.2f} {r['K']}-of-{r['N']:<2} {r[rk]:12.1%} {r[fk]:9.2%}")
+        extra = ""
+        if r.get("gate_closed_on_cat") is not None:
+            extra = f"   gate closed on {r['gate_closed_on_cat']:.0%} of cat clips"
+            if r.get("gate_closed_on_noncat") is not None:
+                extra += f", {r['gate_closed_on_noncat']:.0%} of non-cat clips"
+        print(f"  {r['cutoff']:6.2f} {r['K']}-of-{r['N']:<2} {r[rk]:12.1%} {r[fk]:9.2%}{extra}")
     cur = next((r for r in rows if r["cutoff"] == 0.5 and (r["N"], r["K"]) == (5, 4)), None)
     if cur:
         print(f"  (old config, 0.50 and 4-of-5: {cur[rk]:.1%} recall)")

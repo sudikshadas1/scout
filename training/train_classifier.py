@@ -136,7 +136,11 @@ def main() -> None:
     with torch.no_grad():
         for i in range(0, len(items), args.batch):
             chunk = items[i : i + args.batch]
-            x = torch.stack([tf_eval(Image.open(p).convert("RGB")) for p, _ in chunk]).to(dev)
+            ims = []
+            for p, _ in chunk:
+                with Image.open(p) as im:
+                    ims.append(tf_eval(im.convert("RGB")))
+            x = torch.stack(ims).to(dev)
             probs = torch.sigmoid(net(x).squeeze(1)).tolist()
             best += [(p.name, t, float(c)) for (p, t), c in zip(chunk, probs)]
         # CPU latency per image, for the comparison table

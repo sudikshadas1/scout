@@ -1,6 +1,8 @@
 #!/bin/bash
 # E2: MobileNetV3 cat / not-cat classifier (comparison only, plan sections 5 and 9).
 #   sbatch training/slurm/e2.sbatch
+# If compute nodes have no internet, download the ImageNet weights once on the login node first:
+#   python -c "import torchvision as t; t.models.mobilenet_v3_small(weights='IMAGENET1K_V1')"
 #SBATCH --job-name=scout-E2
 #SBATCH --account=ece
 #SBATCH --partition=coe-gpu

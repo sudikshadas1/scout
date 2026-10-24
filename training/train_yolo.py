@@ -69,7 +69,10 @@ def main() -> None:
     Path("results", args.name).mkdir(parents=True, exist_ok=True)
     Path("results", args.name, "summary.json").write_text(json.dumps(summary, indent=1, default=str))
     if args.export_imgsz:
-        model.export(format="ncnn", imgsz=args.export_imgsz)
+        try:  # the weights are already saved; export on the Pi with edge/bench.py if this fails here
+            model.export(format="ncnn", imgsz=args.export_imgsz)
+        except Exception as e:  # noqa: BLE001
+            print(f"NCNN export skipped ({e}); export on the Pi instead: python -m edge.bench --export ncnn")
     print(json.dumps(summary, indent=1, default=str))
 
 

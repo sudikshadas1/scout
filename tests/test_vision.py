@@ -74,3 +74,20 @@ def test_config_file_loads():
     assert v.N == 5 and 1 <= v.K <= v.N and v.thr["raccoon"] == 0.4
     assert v.thr["cat"] < 0.5  # cat cutoff chosen from training/vote_sim.py, not the 0.5 default
     assert json.load(open("edge/vision_config.json"))["trap_zone"]
+
+
+def test_one_animal_one_label():
+    """A cat also labelled opossum on the same box must not trigger the non-cat cooldown."""
+    v = make()
+    both = [Detection("cat", 0.7, CAT_IN.box), Detection("opossum", 0.45, CAT_IN.box)]
+    r = v.update(both)
+    assert r.non_cat is None and r.cat_hits == 1
+    # the more confident label wins: a real opossum briefly called cat still blocks
+    r = v.update([Detection("opossum", 0.8, CAT_IN.box), Detection("cat", 0.55, CAT_IN.box)])
+    assert r.non_cat == "opossum" and r.cat_hits == 1
+    # a close call on the same box keeps both labels, so the non-cat still blocks
+    r = v.update([Detection("cat", 0.9, CAT_IN.box), Detection("raccoon", 0.85, CAT_IN.box)])
+    assert r.non_cat == "raccoon"
+    # two different animals side by side are both reported
+    r = v.update([Detection("cat", 0.7, CAT_IN.box), Detection("raccoon", 0.6, (0.36, 0.1, 0.5, 0.3))])
+    assert r.non_cat == "raccoon"

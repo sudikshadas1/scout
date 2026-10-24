@@ -181,7 +181,13 @@ close-range trap camera.
 **Cutoff and vote (changed Oct 24).** `training/vote_sim.py` showed the old settings (cat cutoff 0.5,
 4-of-5 vote) would let the trap report only about 9% of cats, even though single frames catch more. The config
 is now cutoff 0.15 with a 3-of-5 vote (estimated 68% trap recall, ~0.01% false positives, assuming independent
-frames). Re-check it on real clips with `vote_sim.py clips` after the footage pilot.
+frames). Re-check it on real clips with `vote_sim.py clips` after the footage pilot; that mode also replays
+the real gate, so "gate closed on cat clips" is the number a staged trial scores.
+
+**One animal, one label (added Oct 24).** If the model labels the same cat "cat" and also "opossum" in one
+frame, the gate used to enter its 10 s non-cat cooldown and never close on that cat. Now the weaker label on the
+same box is dropped, but only when the stronger one is at least 0.1 more confident; close calls keep both, so a
+possible non-cat still holds the gate open (`same_animal_iou`, `same_animal_margin` in `vision_config.json`).
 
 ### Footage pilot and our own trap footage
 
