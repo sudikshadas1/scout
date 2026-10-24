@@ -7,14 +7,17 @@ Team: Sudiksha Das and Henry Poulin (model), Keshav Sheth and Sowmiyan Nattamai 
 
 Design docs: [SCOUT - Research/Notes](https://docs.google.com/document/d/1BFhBik9DCZgdWnCy8yDcnWfe-6-JuTAZf1hQFuI_Fq8/edit). The **CV Model** tab is the plan, the **Code Base** tab maps this code to it, the **CV Team - Next Steps** tab is the step-by-step runbook, and the **High Level Plan** tab has the dated status.
 
-**Pass criterion** (plan section 12): on our own trap footage, at least 75% of cats caught, no more than 25% of other animals called cats, a decision in under 5 seconds, and never "cat in trap" while the cat is in the doorway.
+**How we evaluate** (plan section 12). No live animals are used this semester; every trial in our trap is staged with props. So the evaluation has two parts:
+
+1. **Model accuracy, on real animals:** at least 75% of cats caught and no more than 25% of other animals called cats, on held-out public camera-trap pictures from camera locations the model never trained on.
+2. **Staged trap trials, with props:** stuffed or printed animals and tablet photos in our trap. The gate closes for cat props and stays open for non-cat props, decides in under 5 seconds, and never reports "cat in trap" while the cat is in the doorway.
+
+Props are not real animals, so prop footage is used to check the camera angle, lighting, zones, vote and gate, not to report accuracy.
 
 ## Status (Oct 24)
 
 - **Model:** E1 (YOLO26n fine-tuned on Caltech Camera Traps + ENA24) catches 63.5% of cats on new camera locations, with about 2% false positives. The recall runs E1b and E1c, the seen-location score and the E2 comparison are ready to run on PACE.
-- **Not started yet:** the footage pilot and our own labeled trap footage. This is the biggest risk: every number so far comes from trail cameras metres away, and ours is inches from the animal.
 - **Hardware:** the stub, gate logic and Pi benchmark are written. Waiting on the trap, the camera mount position, the Pi with a camera, and an infrared light.
-- **Tests:** 39 passing (`python -m pytest tests`).
 
 ## How it works
 
@@ -112,7 +115,7 @@ data/                    dataset tools (model team, run on PACE ICE)
   validate_dataset.py      check every YOLO label file
   build_seen_split.py      "seen locations" test split (new bursts from training cameras)
   make_train_list.py       training list with cat images repeated (E1c, E5) + matching yaml
-  add_trap_footage.py      import one labeled session of our trap footage (YOLO export)
+  add_trap_footage.py      import one labeled session of staged trap footage (props, YOLO export)
   scout.yaml               Ultralytics dataset config
 training/                training and evaluation (model team, PACE ICE)
   train_yolo.py            train one detector experiment (E1b, E1c, E5 ...)
@@ -221,7 +224,7 @@ sbatch training/slurm/eval_pace.sbatch E1b && sbatch training/slurm/eval_pace.sb
 
 What to read: `results/<run>_analysis/summary.json`, where `recall_by_size.large` is the number closest to our close-range camera; `results/E1_full_seen/metrics.json` against `results/E1_full_eval/metrics.json`, where a big gap means the model learned backgrounds; `results/E2/metrics.json`.
 
-### Footage pilot and our own trap footage
+### Staged trap footage (props, no live animals)
 
 ```bash
 # record one staged trial per folder, named by what is in it (cat_, raccoon_, opossum_, empty_ ...)
@@ -232,7 +235,7 @@ python training/vote_sim.py clips --model best.pt --clips pilot/clips --full-fra
 # after labeling a session (YOLO export from Roboflow / CVAT / Label Studio); keep 1-2 whole sessions as test
 python data/add_trap_footage.py --data ~/scratch/scout_data --export session1_yolo --session s1_day --split train
 python data/add_trap_footage.py --data ~/scratch/scout_data --export session4_yolo --session s4_dark --split test
-# E5: public data + our footage (repeated 3x), then the real pass/fail test on held-out trap sessions
+# E5: public data + our prop footage (repeated 3x), then the staged test on held-out trap sessions
 python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2 \
        --extra-dir ~/scratch/scout_data/trap/yolo/images/train --extra-repeat 3 --tag e5
 sbatch -J scout-E5 training/slurm/train_pace.sbatch E5 --weights results/E1c/weights/best.pt --epochs 40 \
@@ -274,7 +277,7 @@ Each phase ends at a class checkpoint. Dates updated Oct 24: recording round 1 m
 
 ### Making sure the model learns cats, not backgrounds
 
-Test pictures always come from camera locations the model never trained on (`splits.py`), about 10% of training pictures are empty, and near-identical burst photos are limited (`build_manifest.py`). The seen-location score (`build_seen_split.py`) measures how much the model still relies on backgrounds. In our own trap footage, every session includes cats, non-cats and the empty trap, so "inside the trap" never means "cat". Details: CV Model tab, section 7.
+Test pictures always come from camera locations the model never trained on (`splits.py`), about 10% of training pictures are empty, and near-identical burst photos are limited (`build_manifest.py`). The seen-location score (`build_seen_split.py`) measures how much the model still relies on backgrounds. In our staged trap footage, every session includes cat props, non-cat props and the empty trap, so "inside the trap" never means "cat". Because props can look different from real animals, E5 (trained with prop footage) is always also re-scored on the real-animal public test pictures, so it can't trade real accuracy for prop accuracy. Details: CV Model tab, section 7.
 
 ### Code status
 
