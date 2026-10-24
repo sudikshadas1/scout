@@ -1,7 +1,7 @@
 """Trains the YOLO26n detector for one experiment and exports it to NCNN for the Pi.
 
 Purpose: One script for every training experiment in the plan (E1, E3, E5 ...), so runs are comparable.
-Status:  E1 ran through the yolo CLI (e1_full.sbatch); E1b/E1c use this script (training/slurm/train_pace.sbatch).
+Status:  E1 ran through the yolo CLI (training/slurm/e1_full.sbatch); E1b/E1c use this script (training/slurm/train_pace.sbatch).
 Later stages (still to add or change):
   - Phase 2a: E1 (baseline fine-tune), E3 (augmentation choices) run as-is.
   - Phase 2b: E5 fine-tunes on trap footage and needs data/scout_trap.yaml, which does not exist yet.

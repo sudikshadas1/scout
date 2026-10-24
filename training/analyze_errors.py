@@ -8,7 +8,7 @@ Purpose: E1 catches 132 of 208 val cats at threshold 0.05 (63.5%, target 75%). B
          It also reports recall by box size. Our trap camera is inches away, so cats there fill the frame:
          recall on "large" boxes is the number closest to the real trap; tiny trail-cam cats matter much less.
 Status:  Written; helper functions tested (tests/test_analysis.py). Run it on PACE after each eval.
-Replaces: the one-off inspect_missed.py contact sheet (this draws boxes and groups by failure type).
+Replaces: the old one-off inspect_missed.py contact sheet (removed; see git history) (this draws boxes and groups by failure type).
 Later stages (still to add or change):
   - Phase 2b: run on our own trap footage (--split test on a trap-only yolo folder).
   - Phase 3: run once on the frozen test split for the final report.

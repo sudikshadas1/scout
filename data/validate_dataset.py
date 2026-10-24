@@ -1,3 +1,5 @@
+# Checks every YOLO label file on PACE: 5 fields, class 0-6, finite values, boxes inside the frame.
+# Run from the repo root on PACE: python data/validate_dataset.py
 
 from pathlib import Path
 from collections import Counter
