@@ -71,5 +71,6 @@ def test_bad_config():
 
 def test_config_file_loads():
     v = VisionAggregator.from_config()
-    assert (v.N, v.K) == (5, 4) and v.thr["raccoon"] == 0.4
+    assert v.N == 5 and 1 <= v.K <= v.N and v.thr["raccoon"] == 0.4
+    assert v.thr["cat"] < 0.5  # cat cutoff chosen from training/vote_sim.py, not the 0.5 default
     assert json.load(open("edge/vision_config.json"))["trap_zone"]

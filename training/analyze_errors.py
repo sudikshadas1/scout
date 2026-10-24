@@ -178,7 +178,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
     ap.add_argument("--data", required=True, help="data folder containing yolo/ (and meta/ for locations)")
-    ap.add_argument("--split", default="val", choices=["train", "val", "test"])
+    ap.add_argument("--split", default="val", choices=["train", "val", "test", "seen"])
     ap.add_argument("--n", type=int, default=0, help="same sampling as eval.py; 0 = all images")
     ap.add_argument("--seed", type=int, default=4605)
     ap.add_argument("--imgsz", type=int, default=640)

@@ -1,9 +1,9 @@
 {
-  "_comment": "Settings for edge/vision.py, owned by the model team. N and K: a cat must be seen in the trap zone in K of the last N frames. thresholds: minimum confidence per class. Zones are normalized (0..1) polygons, x left to right, y top to bottom. Status: thresholds are starting values and zones are PLACEHOLDERS. Later: Phase 2a set thresholds from training/eval.py's threshold sweep; Phase 2b redraw both zones from a frame of the mounted camera, with the hardware team.",
+  "_comment": "Settings for edge/vision.py, owned by the model team. N and K: a cat must be seen in the trap zone in K of the last N frames. thresholds: minimum confidence per class. Zones are normalized (0..1) polygons, x left to right, y top to bottom. Status: Oct 24, cat cutoff lowered 0.5 -> 0.15 and vote 4-of-5 -> 3-of-5 from training/vote_sim.py on E1 (estimated trap-level recall 9% -> 68%, trap false-positive rate ~0.01%). Re-check with vote_sim.py clips once pilot clips exist. Zones are PLACEHOLDERS until the camera is mounted: redraw with python -m edge.draw_zones.",
   "N": 5,
-  "K": 4,
+  "K": 3,
   "thresholds": {
-    "cat": 0.5,
+    "cat": 0.15,
     "raccoon": 0.4,
     "opossum": 0.4,
     "squirrel": 0.4,

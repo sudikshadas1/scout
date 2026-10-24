@@ -13,8 +13,9 @@ Runs the REAL edge/vision.py aggregator and the reference edge/gate.py, so what 
     python -m edge.demo --model best.pt --source clip.mp4                   # a video
     python -m edge.demo --model best.pt --source demo_pics/ --out demo_out/ # folder, no window (headless)
     python -m edge.demo --model best.pt --source 0 --save-dir pilot/session1 # record raw frames for labelling
+    python -m edge.demo --model best.pt --picam --headless --record --save-dir pilot/s1   # Pi, no screen
 
-Keys (window mode): q quit, space pause, s save this raw frame, r start/stop recording (2 fps),
+Keys (window mode): q quit, space pause, s save this raw frame, r start/stop recording (--rec-fps),
                     a re-arm the gate after it closes, z toggle zones.
 Picture folders: each picture is shown for --hold frames with a fresh vote, i.e. one staged trial per picture.
 """
@@ -127,6 +128,9 @@ def main() -> None:
     ap.add_argument("--hold", type=int, default=5, help="frames per still picture (one vote window)")
     ap.add_argument("--out", help="write annotated frames here instead of opening a window")
     ap.add_argument("--save-dir", help="where raw frames go when you press s / r")
+    ap.add_argument("--record", action="store_true", help="start recording to --save-dir right away")
+    ap.add_argument("--rec-fps", type=float, default=2.0, help="frames saved per second while recording")
+    ap.add_argument("--headless", action="store_true", help="no window and no annotated output (e.g. Pi over ssh)")
     ap.add_argument("--plate", action="store_true", help="gate requires the pressure plate (always pressed here)")
     args = ap.parse_args()
 
@@ -139,8 +143,10 @@ def main() -> None:
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
     save_dir = Path(args.save_dir) if args.save_dir else None
-    window = out_dir is None
-    show_zones, paused, recording, last_rec, t_prev, fps = True, False, False, 0.0, time.time(), None
+    window = out_dir is None and not args.headless
+    if args.record and not save_dir:
+        raise SystemExit("--record needs --save-dir")
+    show_zones, paused, recording, last_rec, t_prev, fps = True, False, args.record, 0.0, time.time(), None
     trials = []
 
     for name, frame, still in iter_source(args.source, args.picam):
@@ -157,7 +163,7 @@ def main() -> None:
             t_prev = now
             canvas = draw(frame, dets, report, status.state, status.reason, vision, show_zones,
                           None if still else fps, recording)
-            if recording and save_dir and now - last_rec >= 0.5:
+            if recording and save_dir and now - last_rec >= 1.0 / args.rec_fps:
                 save_dir.mkdir(parents=True, exist_ok=True)
                 cv2.imwrite(str(save_dir / f"{time.strftime('%Y%m%d_%H%M%S')}_{int(now * 1000) % 1000:03d}.jpg"), frame)
                 last_rec = now

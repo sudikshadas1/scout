@@ -36,7 +36,7 @@ flowchart LR
 1. The PIR sensor wakes the system when something moves.
 2. The camera captures frames at about 5 fps.
 3. The **detector** (fine-tuned YOLO26n) finds animals in each frame: cat, raccoon, opossum, squirrel, dog, other animal, person.
-4. The **vision aggregator** smooths those detections over the last 5 frames and reports what it sees: is a cat inside the trap zone (in 4 of the last 5 frames)? Is anything in the doorway? Is a non-cat present?
+4. The **vision aggregator** smooths those detections over the last 5 frames and reports what it sees: is a cat inside the trap zone (in 3 of the last 5 frames; K and N are in `edge/vision_config.json`)? Is anything in the doorway? Is a non-cat present?
 5. The **gate controller** decides whether to close, using the vision report plus the pressure plate and its safety rules.
 
 Everything runs on the Pi, with no Wi-Fi needed.
@@ -79,7 +79,7 @@ if status.command == Command.CLOSE:
 `edge/stub.py` feeds fake detections through the real vision and gate code. One token per frame: `c` cat in trap, `d` cat in doorway, `r` raccoon, `o` opossum, `n` nothing, `f` fault, `p` cat + plate pressed.
 
 ```bash
-python -m edge.stub --script c,c,c,c,c            # closes on frame 4
+python -m edge.stub --script c,c,c,c,c            # closes on frame 3 (3-of-5 vote)
 python -m edge.stub --script c,c,r,c,c            # raccoon: cooldown, stays open
 python -m edge.stub --script c,c,c,c,p --plate    # closes only when the plate is pressed
 python -m edge.stub --interactive
@@ -94,7 +94,9 @@ data/                  dataset tools (model team, run on PACE ICE)
   stats.py               images per species and per class, per dataset
   splits.py              location-based train/val/test -> data/splits.json (commit it)
   build_manifest.py      choose balanced images + boxes -> manifest.jsonl
-  make_train_list.py     training list with cat images repeated (E1c) + matching yaml
+  make_train_list.py     training list with cat images repeated (E1c, E5) + matching yaml
+  build_seen_split.py    "seen locations" test split (new bursts from training cameras)
+  add_trap_footage.py    import one labeled session of our trap footage (YOLO export)
   download_images.py     download images, write YOLO labels
   common.py              class list, species -> class mapping
   scout.yaml             Ultralytics dataset config
@@ -102,6 +104,8 @@ training/              (model team)
   train_yolo.py          train one experiment (E1, E3, E5 ...)
   eval.py                cat recall, per-species false positives, threshold sweep
   analyze_errors.py      why cats are missed: wrong class / low confidence / not found, by size, night, location
+  vote_sim.py            choose the cat cutoff + K-of-N vote at trap level (from a sweep, or on real clips)
+  train_classifier.py    E2: MobileNetV3 cat / not-cat comparison
   slurm/                 PACE ICE jobs: setup_env.sh, smoke_test, data, train, train_pace, eval_pace
 edge/                  code that runs on the Pi
   vision.py              Detector + VisionAggregator + VisionReport (model team)
@@ -110,6 +114,7 @@ edge/                  code that runs on the Pi
   run_trap.py            main loop + hardware hooks (PIR, plate, servo)
   stub.py                fake detections for hardware testing
   demo.py                laptop prototype: live boxes, zones, report, simulated gate; records frames
+  draw_zones.py          click the trap / doorway zones on a frame -> vision_config.json
   bench.py               per-stage latency on the Pi
 tests/                 python -m pytest tests
 results/               one folder per experiment (metrics kept, weights git-ignored)
@@ -154,14 +159,18 @@ False positives have a lot of room (2% vs a 25% budget), so the next runs trade 
 ### Next CV runs (on PACE)
 
 ```bash
-# 1. Why are cats missed? (eval + failure breakdown + contact sheets for E1)
+cd ~/scout && git fetch && git checkout cv/recall-analysis-demo && git pull
+# 1. Why are cats missed? eval + failure breakdown + contact sheets + cutoff/vote estimate for E1
 sbatch training/slurm/eval_pace.sbatch E1_full
-# 2. Recall experiments, run in parallel (each changes one thing vs E1)
+# 2. Recall experiments, in parallel (each changes one thing vs E1)
 sbatch -J scout-E1b training/slurm/train_pace.sbatch E1b --epochs 80 --patience 25
 python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2
 sbatch -J scout-E1c training/slurm/train_pace.sbatch E1c --epochs 80 --patience 25 \
        --data-yaml ~/scratch/scout_data/scout_cat2x.yaml
-# 3. When they finish
+# 3. Seen-location score (plan section 7) and the E2 classifier comparison
+sbatch training/slurm/seen.sbatch E1_full
+sbatch training/slurm/e2.sbatch
+# 4. When E1b / E1c finish
 sbatch training/slurm/eval_pace.sbatch E1b && sbatch training/slurm/eval_pace.sbatch E1c
 ```
 
@@ -169,12 +178,37 @@ E1b = train longer (E1 stopped at 24 epochs). E1c = E1b plus every cat image sho
 Read `results/<run>_analysis/summary.json` first: `recall_by_size.large` is the number closest to our
 close-range trap camera.
 
-### Laptop demo / footage recorder
+**Cutoff and vote (changed Oct 24).** `training/vote_sim.py` showed the old settings (cat cutoff 0.5,
+4-of-5 vote) would let the trap report only about 9% of cats, even though single frames catch more. The config
+is now cutoff 0.15 with a 3-of-5 vote (estimated 68% trap recall, ~0.01% false positives, assuming independent
+frames). Re-check it on real clips with `vote_sim.py clips` after the footage pilot.
+
+### Footage pilot and our own trap footage
+
+```bash
+# record one staged trial per folder, named by what is in it (cat_, raccoon_, opossum_, empty_ ...)
+python -m edge.demo --model yolo26n.pt --source 0 --save-dir pilot/clips/cat_01      # press r to record
+python -m edge.demo --model yolo26n.pt --picam --headless --record --save-dir pilot/clips/empty_01  # Pi
+# measure trap-level recall on those clips for every cutoff x vote setting
+python training/vote_sim.py clips --model best.pt --clips pilot/clips --full-frame
+# after labeling a session (YOLO export from Roboflow / CVAT / Label Studio)
+python data/add_trap_footage.py --data ~/scratch/scout_data --export session1_yolo --session s1_day --split train
+python data/add_trap_footage.py --data ~/scratch/scout_data --export session4_yolo --session s4_dark --split test
+# E5: public data + our footage (repeated 3x), then the real pass/fail test on held-out trap sessions
+python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2 \
+       --extra-dir ~/scratch/scout_data/trap/yolo/images/train --extra-repeat 3 --tag e5
+sbatch -J scout-E5 training/slurm/train_pace.sbatch E5 --weights results/E1c/weights/best.pt --epochs 40 \
+       --data-yaml ~/scratch/scout_data/scout_e5.yaml
+python training/eval.py --model results/E5/weights/best.pt --data ~/scratch/scout_data/trap --split test --name E5_trap
+# once the camera is mounted: draw the trap and doorway zones on a real frame
+python -m edge.draw_zones --image pilot/clips/empty_01/<frame>.jpg
+```
+
+### Laptop demo
 
 ```bash
 python -m edge.demo --model results/E1_full/weights/best.pt --source 0                  # webcam
 python -m edge.demo --model best.pt --source demo_pics/ --out demo_out/                 # folder, headless
-python -m edge.demo --model best.pt --source 0 --save-dir pilot/session1                # s = save, r = record
 ```
 
 ## Project phases
@@ -218,8 +252,8 @@ Test pictures always come from camera locations the model never trained on (`spl
 - **Done and tested:** vision/gate interface, hardware stub, tests (17 pass).
 - **Written, needs real data:** data pipeline (tested on fake data), training and evaluation scripts.
 - **Written, tested on a laptop:** Pi benchmark and main loop.
-- **Written, smoke-tested on a laptop:** laptop demo/recorder (`edge/demo.py`), miss analysis (`training/analyze_errors.py`), cat oversampling (`data/make_train_list.py`).
-- **Still to write:** Pi recording script for our footage (demo.py --picam covers it if a display is attached), adding our labeled footage to the dataset, seen-location vs new-location score report, MobileNetV3 comparison (E2), black-and-white data (E4), trap/doorway area drawing tool.
+- **Written, smoke-tested on a laptop:** laptop demo/recorder (`edge/demo.py`), miss analysis (`training/analyze_errors.py`), cat oversampling (`data/make_train_list.py`), cutoff/vote chooser (`training/vote_sim.py`), seen-location split (`data/build_seen_split.py`), E2 MobileNetV3 comparison (`training/train_classifier.py`), trap-footage import (`data/add_trap_footage.py`), zone drawing (`edge/draw_zones.py`).
+- **Still to write:** black-and-white training data (E4), second-camera support.
 - **Placeholders:** trap and doorway areas in `edge/vision_config.json`, until the camera is mounted.
 
 Every file starts with a short header: what it does, its purpose, its status, and what still needs to be added or changed in later phases. Read that first before editing a file.

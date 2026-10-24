@@ -27,3 +27,4 @@ python training/analyze_errors.py --model "$W" --data ~/scratch/scout_data --spl
     --name "${NAME}_analysis" --thr 0.25
 python training/analyze_errors.py --model "$W" --data ~/scratch/scout_data --split val --n "$N" \
     --name "${NAME}_analysis_t05" --thr 0.05
+python training/vote_sim.py sweep "results/${NAME}_eval/threshold_sweep.csv"
