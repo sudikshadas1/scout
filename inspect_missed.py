@@ -1,3 +1,4 @@
+# Superseded by training/analyze_errors.py (groups misses by reason, draws boxes). Kept for reference.
 
 import csv
 from pathlib import Path

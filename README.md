@@ -94,19 +94,22 @@ data/                  dataset tools (model team, run on PACE ICE)
   stats.py               images per species and per class, per dataset
   splits.py              location-based train/val/test -> data/splits.json (commit it)
   build_manifest.py      choose balanced images + boxes -> manifest.jsonl
+  make_train_list.py     training list with cat images repeated (E1c) + matching yaml
   download_images.py     download images, write YOLO labels
   common.py              class list, species -> class mapping
   scout.yaml             Ultralytics dataset config
 training/              (model team)
   train_yolo.py          train one experiment (E1, E3, E5 ...)
   eval.py                cat recall, per-species false positives, threshold sweep
-  slurm/                 PACE ICE jobs: setup_env.sh, smoke_test, data, train
+  analyze_errors.py      why cats are missed: wrong class / low confidence / not found, by size, night, location
+  slurm/                 PACE ICE jobs: setup_env.sh, smoke_test, data, train, train_pace, eval_pace
 edge/                  code that runs on the Pi
   vision.py              Detector + VisionAggregator + VisionReport (model team)
   vision_config.json     N, K, thresholds, trap/doorway zones
   gate.py                GateController (hardware team)
   run_trap.py            main loop + hardware hooks (PIR, plate, servo)
   stub.py                fake detections for hardware testing
+  demo.py                laptop prototype: live boxes, zones, report, simulated gate; records frames
   bench.py               per-stage latency on the Pi
 tests/                 python -m pytest tests
 results/               one folder per experiment (metrics kept, weights git-ignored)
@@ -139,6 +142,41 @@ python -m edge.bench --model yolo26n.pt --export ncnn --imgsz 416 --runs 200
 python -m edge.run_trap --model yolo26n_ncnn_model
 ```
 
+## Current CV results (Oct 22)
+
+| Run | Cat recall @0.05 | Cat recall @0.25 | Non-cat FPR @0.25 | Notes |
+| --- | --- | --- | --- | --- |
+| E0 stock YOLO26n | 4.3% | | 2.1% | no training |
+| E1 fine-tuned, 24 epochs | 63.5% | 54.8% | 2.1% | target is 75% recall, <=25% FPR |
+
+False positives have a lot of room (2% vs a 25% budget), so the next runs trade some of it for recall.
+
+### Next CV runs (on PACE)
+
+```bash
+# 1. Why are cats missed? (eval + failure breakdown + contact sheets for E1)
+sbatch training/slurm/eval_pace.sbatch E1_full
+# 2. Recall experiments, run in parallel (each changes one thing vs E1)
+sbatch -J scout-E1b training/slurm/train_pace.sbatch E1b --epochs 80 --patience 25
+python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2
+sbatch -J scout-E1c training/slurm/train_pace.sbatch E1c --epochs 80 --patience 25 \
+       --data-yaml ~/scratch/scout_data/scout_cat2x.yaml
+# 3. When they finish
+sbatch training/slurm/eval_pace.sbatch E1b && sbatch training/slurm/eval_pace.sbatch E1c
+```
+
+E1b = train longer (E1 stopped at 24 epochs). E1c = E1b plus every cat image shown twice per epoch.
+Read `results/<run>_analysis/summary.json` first: `recall_by_size.large` is the number closest to our
+close-range trap camera.
+
+### Laptop demo / footage recorder
+
+```bash
+python -m edge.demo --model results/E1_full/weights/best.pt --source 0                  # webcam
+python -m edge.demo --model best.pt --source demo_pics/ --out demo_out/                 # folder, headless
+python -m edge.demo --model best.pt --source 0 --save-dir pilot/session1                # s = save, r = record
+```
+
 ## Project phases
 
 The project runs in phases, each ending at a class checkpoint. **We are in Phase 1.** Recording our own trap footage starts early, because a model trained on trail cameras (far away) may fail on our camera (inches from the animal). This is the biggest risk. Details: CV Model tab, sections 10 and 13.
@@ -160,13 +198,13 @@ Done:
 
 To do:
 - [ ] Add all team members as collaborators
-- [ ] PACE ICE setup + test job: `bash training/slurm/setup_env.sh`, then `sbatch training/slurm/smoke_test.sbatch`
-- [ ] Download the labels and count pictures per animal: `fetch_metadata.py`, then `stats.py`
-- [ ] Split by camera location and commit `data/splits.json`: `splits.py`
-- [ ] Download the pictures onto PACE: `sbatch training/slurm/data.sbatch`
-- [ ] E0 baseline (stock model, no training): `python training/eval.py --model yolo26n.pt --data $DATA --split val --n 500 --name E0`
+- [x] PACE ICE setup + test job: `bash training/slurm/setup_env.sh`, then `sbatch training/slurm/smoke_test.sbatch`
+- [x] Download the labels and count pictures per animal: `fetch_metadata.py`, then `stats.py`
+- [x] Split by camera location and commit `data/splits.json`: `splits.py`
+- [x] Download the pictures onto PACE: `sbatch training/slurm/data.sbatch`
+- [x] E0 baseline (stock model, no training): `python training/eval.py --model yolo26n.pt --data $DATA --split val --n 500 --name E0`
 - [ ] Footage pilot: mount one camera in the real trap, take 50 to 100 pictures (stuffed cat, tablet photo, empty trap), and run the stock model on them
-- [ ] Laptop prototype: webcam, then model, then boxes and the report on screen (also the viewer for the footage pilot)
+- [x] Laptop prototype: webcam, then model, then boxes and the report on screen (`python -m edge.demo`)
 - [ ] Pi 5 + camera speed test: `python -m edge.bench`
 - [ ] Hardware team closes the servo from `python -m edge.stub` (CP1 depends on this)
 - [ ] Decide the camera position, buy infrared lights for night, and decide whether the pressure plate is in
@@ -180,7 +218,8 @@ Test pictures always come from camera locations the model never trained on (`spl
 - **Done and tested:** vision/gate interface, hardware stub, tests (17 pass).
 - **Written, needs real data:** data pipeline (tested on fake data), training and evaluation scripts.
 - **Written, tested on a laptop:** Pi benchmark and main loop.
-- **Still to write:** laptop prototype / picture viewer, Pi recording script for our footage, adding our labeled footage to the dataset, seen-location vs new-location score report, MobileNetV3 comparison (E2), black-and-white data (E4), trap/doorway area drawing tool.
+- **Written, smoke-tested on a laptop:** laptop demo/recorder (`edge/demo.py`), miss analysis (`training/analyze_errors.py`), cat oversampling (`data/make_train_list.py`).
+- **Still to write:** Pi recording script for our footage (demo.py --picam covers it if a display is attached), adding our labeled footage to the dataset, seen-location vs new-location score report, MobileNetV3 comparison (E2), black-and-white data (E4), trap/doorway area drawing tool.
 - **Placeholders:** trap and doorway areas in `edge/vision_config.json`, until the camera is mounted.
 
 Every file starts with a short header: what it does, its purpose, its status, and what still needs to be added or changed in later phases. Read that first before editing a file.
