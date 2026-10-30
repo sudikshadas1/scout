@@ -1,9 +1,8 @@
 """Freezes location-based train / val / test splits so no camera location is in two splits.
 
 Purpose: Stops the model from memorizing backgrounds: test locations are never seen in training (plan: background-learning safeguards).
-Status:  Written and tested on fake data. Not yet run; data/splits.json not yet committed.
+Status:  Run on PACE; data/splits.json is committed. Do not change it.
 Later stages (still to add or change):
-  - Phase 1: run once on PACE and commit data/splits.json. Do not change it afterwards.
   - Phase 2a: add a seen-location split (held-out images from training locations) to compare seen vs new locations.
   - Phase 2a: add our own trap footage, split by recording session or day, never by individual frame.
 

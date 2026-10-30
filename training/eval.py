@@ -1,7 +1,7 @@
 """Measures cat recall and per-species false-positive rate (including empty backgrounds), plus a threshold sweep.
 
 Purpose: These are the numbers the plan and checkpoints report; they also pick the per-class thresholds in vision_config.json.
-Status:  Written. Not yet run on real data (E0 is the first run).
+Status:  Run on E0 through E2. Scores so far are at imgsz 640; the Pi 3's size still has to be scored.
 Later stages (still to add or change):
   - Phase 2a: add a seen-location vs new-location breakdown once splits.py has a seen-location split.
   - Phase 2b: evaluate on our own trap footage and on the empty-trap check (no animal should be reported).
@@ -126,8 +126,8 @@ def main() -> None:
 
     r, fpr = main_score["cat_recall"], main_score["noncat_fpr"]
     print(f"{args.name}: {len(best)} images ({main_score['n_cat']} cat / {main_score['n_noncat']} non-cat) @ thr {args.thr}")
-    print(f"  cat recall   {r:.1%}   (target >= 75%)" if r is not None else "  no cat images")
-    print(f"  non-cat FPR  {fpr:.1%}   (target <= 25%)" if fpr is not None else "  no non-cat images")
+    print(f"  cat recall   {r:.1%}   (goal >= 75%)" if r is not None else "  no cat images")
+    print(f"  non-cat FPR  {fpr:.1%}   (target < 5%)" if fpr is not None else "  no non-cat images")
     for sp, v in main_score["fpr_by_species"].items():
         print(f"    {sp:13s} called cat {v:.1%}")
     print(f"  wrote {out}/metrics.json, threshold_sweep.csv, per_image.csv")

@@ -18,7 +18,7 @@ from build_seen_split import pick_seen  # noqa: E402
 from common import CocoCT  # noqa: E402
 from test_data import fake_coco  # noqa: E402
 from train_classifier import score  # noqa: E402
-from vote_sim import p_at_least, replay, sweep_rows  # noqa: E402
+from vote_sim import best_rows, p_at_least, replay, sweep_rows  # noqa: E402
 
 from edge.draw_zones import parse_points, save_zones  # noqa: E402
 from edge.vision import Detection  # noqa: E402
@@ -35,6 +35,15 @@ def test_sweep_rows():
     rows = sweep_rows([{"threshold": "0.25", "cat_recall": "0.5", "noncat_fpr": "0.02"}])
     r = next(x for x in rows if (x["N"], x["K"]) == (5, 3))
     assert r["trap_recall_est"] == pytest.approx(0.5) and r["trap_fpr_est"] < 0.001
+
+
+def test_best_rows_limits_the_single_frame_rate():
+    # E1b's numbers: 0.05 is over 5% per frame even though its trap estimate is under 1%
+    rows = sweep_rows([{"threshold": "0.05", "cat_recall": "0.731", "noncat_fpr": "0.099"},
+                       {"threshold": "0.25", "cat_recall": "0.692", "noncat_fpr": "0.048"}])
+    assert best_rows(rows, "trap_recall_est", "trap_fpr_est", 0.05)[0]["cutoff"] == 0.05
+    picked = best_rows(rows, "trap_recall_est", "frame_fpr", 0.05)
+    assert {r["cutoff"] for r in picked} == {0.25} and (picked[0]["N"], picked[0]["K"]) == (5, 3)
 
 
 def test_replay_uses_real_aggregator():

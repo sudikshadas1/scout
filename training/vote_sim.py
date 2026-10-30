@@ -2,7 +2,10 @@
 
 Purpose: The gate acts on the vote, not on single frames. A per-frame recall that looks fine can still give a
          low trap-level recall (60% per frame -> ~34% for 4-of-5), so the cutoff and K have to be chosen together.
-Status:  Written; vote logic tested (tests/test_vote.py). Clip mode needs recorded clips (footage pilot).
+Status:  Written; vote logic tested (tests/test_new_tools.py). Clip mode needs recorded clips (footage pilot).
+         Goal is under 5% false positives (--max-fpr). Sweep mode applies it to the single-frame rate: the
+         independent-frame trap estimate is far too low (E1b at cutoff 0.05 is 9.9% per frame, 0.8% estimated).
+         --fps defaults to 5, but the Pi 3 may run slower: use the rate edge/bench.py measures.
 
 Two modes:
 
@@ -42,15 +45,21 @@ def p_at_least(k: int, n: int, p: float) -> float:
     return sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
 
 
-def sweep_rows(sweep: list[dict]) -> list[dict]:
+def sweep_rows(sweep: list[dict], fps: float = 5.0) -> list[dict]:
     rows = []
     for r in sweep:
         p, q = float(r["cat_recall"]), float(r["noncat_fpr"])
         for n, k in VOTES:
             rows.append({"cutoff": float(r["threshold"]), "N": n, "K": k, "frame_recall": p, "frame_fpr": q,
                          "trap_recall_est": p_at_least(k, n, p), "trap_fpr_est": p_at_least(k, n, q),
-                         "decision_s_at_5fps": k / 5})
+                         "decision_s": k / fps})
     return rows
+
+
+def best_rows(rows: list[dict], recall_key: str, fpr_key: str, max_fpr: float) -> list[dict]:
+    """Settings with FPR under max_fpr, best recall first."""
+    ok = [r for r in rows if r[recall_key] is not None and r[fpr_key] is not None and r[fpr_key] < max_fpr]
+    return sorted(ok, key=lambda r: (-r[recall_key], r[fpr_key], r["K"]))
 
 
 def replay(frames: list[list], cutoff: float, n: int, k: int, cfg: dict, full_frame: bool,
@@ -85,16 +94,20 @@ def main() -> None:
     s = sub.add_parser("sweep")
     s.add_argument("csv", help="threshold_sweep.csv from training/eval.py")
     s.add_argument("--name", help="results folder (default: next to the csv)")
+    s.add_argument("--fps", type=float, default=5.0, help="frame rate measured on the Pi 3")
+    s.add_argument("--max-fpr", type=float, default=0.05, help="limit on the single-frame false-positive rate")
     c = sub.add_parser("clips")
     c.add_argument("--model", required=True)
     c.add_argument("--clips", required=True)
     c.add_argument("--imgsz", type=int, default=416)
     c.add_argument("--full-frame", action="store_true", help="ignore trap/doorway zones")
     c.add_argument("--name", default="vote_clips")
+    c.add_argument("--fps", type=float, default=5.0, help="frame rate measured on the Pi 3")
+    c.add_argument("--max-fpr", type=float, default=0.05, help="limit on the false-positive rate measured on clips")
     args = ap.parse_args()
 
     if args.mode == "sweep":
-        rows = sweep_rows(list(csv.DictReader(open(args.csv))))
+        rows = sweep_rows(list(csv.DictReader(open(args.csv))), args.fps)
         out = Path("results") / args.name if args.name else Path(args.csv).parent
     else:
         import json
@@ -113,7 +126,7 @@ def main() -> None:
         rows = []
         for cutoff, (n, k) in product(CUTOFFS, VOTES):
             fired = [(is_cat, kind, replay(fr, cutoff, n, k, cfg, args.full_frame)) for is_cat, kind, fr in data]
-            closed = [(is_cat, replay(fr, cutoff, n, k, cfg, args.full_frame, gate=True)) for is_cat, _, fr in data]
+            closed = [(is_cat, replay(fr, cutoff, n, k, cfg, args.full_frame, gate=True, fps=args.fps)) for is_cat, _, fr in data]
             cats = [f for c_, _, f in fired if c_]
             non = [f for c_, _, f in fired if not c_]
             gc = [f for c_, f in closed if c_]
@@ -135,9 +148,9 @@ def main() -> None:
 
     rk = "trap_recall_est" if args.mode == "sweep" else "trap_recall"
     fk = "trap_fpr_est" if args.mode == "sweep" else "trap_fpr"
-    ok = [r for r in rows if r[rk] is not None and r[fk] is not None and r[fk] <= 0.25]
-    ok.sort(key=lambda r: (-r[rk], r[fk], r["K"]))
-    print(f"\nbest settings with trap false-positive rate <= 25% ({'independent-frame estimate' if args.mode == 'sweep' else 'measured on clips'}):")
+    ok = best_rows(rows, rk, "frame_fpr" if args.mode == "sweep" else fk, args.max_fpr)
+    limit = "single-frame false-positive rate" if args.mode == "sweep" else "trap false-positive rate"
+    print(f"\nbest settings with {limit} < {args.max_fpr:.0%} ({'independent-frame estimate' if args.mode == 'sweep' else 'measured on clips'}):")
     print(f"  {'cutoff':>6} {'vote':>6} {'trap recall':>12} {'trap FPR':>9}")
     for r in ok[:8]:
         extra = ""

@@ -2,7 +2,7 @@
 
 Purpose: The proposal promises this comparison (plan sections 5 and 9). A classifier says "cat somewhere in the
          picture" but not WHERE, so it can't tell a cat in the doorway from one past it; it is not used on the trap.
-Status:  Written; smoke-tested on CPU with a tiny fake dataset. Not yet run on PACE.
+Status:  Run on PACE: 27.9% recall at cutoff 0.05, far behind the detector. Comparison only.
 
 Uses the same YOLO folders as the detector: an image is "cat" if its label file has a cat box. Scores use the
 same metrics as training/eval.py (cat recall, non-cat false-positive rate by species, threshold sweep), on the
