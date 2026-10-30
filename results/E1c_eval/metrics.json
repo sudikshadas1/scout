@@ -1,0 +1,19 @@
+{
+ "threshold": 0.25,
+ "cat_recall": 0.6875,
+ "noncat_fpr": 0.05136986301369863,
+ "fpr_by_species": {
+  "background": 0.0,
+  "dog": 0.0,
+  "opossum": 0.11940298507462686,
+  "other_animal": 0.08571428571428572,
+  "raccoon": 0.014705882352941176,
+  "squirrel": 0.0
+ },
+ "n_cat": 208,
+ "n_noncat": 292,
+ "model": "results/E1c/weights/best.pt",
+ "split": "val",
+ "imgsz": 640,
+ "n_images": 500
+}

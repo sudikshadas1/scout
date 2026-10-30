@@ -1,0 +1,92 @@
+{
+ "model": "results/E1_full/weights/best.pt",
+ "split": "val",
+ "threshold": 0.25,
+ "n_cat_images": 208,
+ "cat_recall": 0.5480769230769231,
+ "animal_recall_any_class": 0.8990384615384616,
+ "miss_reasons": {
+  "wrong_class": 73,
+  "not_found": 17,
+  "low_conf_cat": 4
+ },
+ "missed_cats_called": {
+  "other_animal": 34,
+  "opossum": 14,
+  "raccoon": 17,
+  "dog": 3,
+  "squirrel": 5
+ },
+ "recall_by_size": {
+  "medium": {
+   "recall": 0.8421052631578947,
+   "hit": 16,
+   "n": 19
+  },
+  "small": {
+   "recall": 0.5321637426900585,
+   "hit": 91,
+   "n": 171
+  },
+  "tiny": {
+   "recall": 0.3888888888888889,
+   "hit": 7,
+   "n": 18
+  }
+ },
+ "recall_by_night": {
+  "False": {
+   "recall": 0.2727272727272727,
+   "hit": 6,
+   "n": 22
+  },
+  "True": {
+   "recall": 0.5806451612903226,
+   "hit": 108,
+   "n": 186
+  }
+ },
+ "recall_by_dataset": {
+  "cct": {
+   "recall": 0.5480769230769231,
+   "hit": 114,
+   "n": 208
+  }
+ },
+ "recall_by_location": {
+  "cct:100": {
+   "recall": 0.5702479338842975,
+   "hit": 69,
+   "n": 121
+  },
+  "cct:125": {
+   "recall": 0.5,
+   "hit": 24,
+   "n": 48
+  },
+  "cct:28": {
+   "recall": 0.5384615384615384,
+   "hit": 21,
+   "n": 39
+  }
+ },
+ "miss_reason_by_size": {
+  "tiny": {
+   "hit": 7,
+   "not_found": 6,
+   "wrong_class": 5
+  },
+  "small": {
+   "wrong_class": 66,
+   "not_found": 10,
+   "hit": 91,
+   "low_conf_cat": 4
+  },
+  "medium": {
+   "wrong_class": 2,
+   "hit": 16,
+   "not_found": 1
+  },
+  "large": {}
+ }
+}

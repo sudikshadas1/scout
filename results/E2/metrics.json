@@ -1,0 +1,21 @@
+{
+ "threshold": 0.5,
+ "cat_recall": 0.15865384615384615,
+ "noncat_fpr": 0.0136986301369863,
+ "fpr_by_species": {
+  "background": 0.0,
+  "dog": 0.0,
+  "opossum": 0.014925373134328358,
+  "other_animal": 0.02857142857142857,
+  "raccoon": 0.0,
+  "squirrel": 0.2
+ },
+ "n_cat": 208,
+ "n_noncat": 292,
+ "model": "mobilenet_v3_small",
+ "split": "val",
+ "imgsz": 224,
+ "n_images": 500,
+ "cpu_ms_per_image": 4.4,
+ "epochs": 12
+}

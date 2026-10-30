@@ -88,6 +88,29 @@ def box_grounded_in(box, poly) -> bool:
     return all(point_in_poly(p, poly) for p in ((x1, y2), ((x1 + x2) / 2, y2), (x2, y2)))
 
 
+def iou(a, b) -> float:
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = ix * iy
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union > 0 else 0.0
+
+
+def one_label_per_animal(dets: list[Detection], same_iou: float, margin: float) -> list[Detection]:
+    """Two boxes of different classes on the same animal (IoU >= same_iou): drop the weaker label, but only if
+    the stronger one is at least `margin` more confident.
+
+    Without this, one frame where a cat is ALSO labelled opossum puts the gate into its non-cat cooldown and
+    the trap never closes on that cat. When the two labels are close (cat 0.90 vs raccoon 0.85) both are kept,
+    so the non-cat still holds the gate open: when unsure, don't trap.
+    """
+    keep = []
+    for d in sorted(dets, key=lambda d: -d.conf):
+        if all(d.cls == k.cls or iou(d.box, k.box) < same_iou or k.conf - d.conf < margin for k in keep):
+            keep.append(d)
+    return keep
+
+
 def box_touches(box, poly) -> bool:
     """Approximate box/polygon overlap (fine for the convex zones we draw)."""
     x1, y1, x2, y2 = box
@@ -100,7 +123,8 @@ def box_touches(box, poly) -> bool:
 class VisionAggregator:
     """Turns per-frame detections into a smoothed VisionReport (K-of-N voting + zone checks)."""
 
-    def __init__(self, N=5, K=4, thresholds=None, trap_zone=None, doorway_zone=None):
+    def __init__(self, N=5, K=4, thresholds=None, trap_zone=None, doorway_zone=None, same_animal_iou=0.6,
+                 same_animal_margin=0.1):
         if not 1 <= K <= N:
             raise ValueError("need 1 <= K <= N")
         self.N, self.K = N, K
@@ -108,18 +132,21 @@ class VisionAggregator:
         self.thr = {**{c: 0.5 for c in CLASSES}, **(thresholds or {})}
         self.trap = [tuple(p) for p in (trap_zone or [(0, 0), (1, 0), (1, 1), (0, 1)])]
         self.door = [tuple(p) for p in (doorway_zone or [])]
+        self.same_iou, self.same_margin = same_animal_iou, same_animal_margin
         self.window: deque[Detection | None] = deque(maxlen=N)
 
     @classmethod
     def from_config(cls, path: str | Path = CONFIG) -> "VisionAggregator":
         cfg = json.loads(Path(path).read_text())
-        return cls(**{k: cfg[k] for k in ("N", "K", "thresholds", "trap_zone", "doorway_zone") if k in cfg})
+        keys = ("N", "K", "thresholds", "trap_zone", "doorway_zone", "same_animal_iou", "same_animal_margin")
+        return cls(**{k: cfg[k] for k in keys if k in cfg})
 
     def reset(self) -> None:
         self.window.clear()
 
     def update(self, dets: list[Detection]) -> VisionReport:
         live = [d for d in dets if d.cls in self.thr and d.conf >= self.thr[d.cls]]
+        live = one_label_per_animal(live, self.same_iou, self.same_margin)
 
         others = [d for d in live if d.cls != "cat"]
         worst = max(others, key=lambda d: d.conf) if others else None

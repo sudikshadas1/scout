@@ -1,0 +1,21 @@
+{
+ "name": "E1b",
+ "weights_start": "yolo26n.pt",
+ "map50": 0.7523474187183489,
+ "map50_95": 0.480064270613812,
+ "args": {
+  "name": "E1b",
+  "weights": "yolo26n.pt",
+  "data_yaml": "data/scout_pace.yaml",
+  "imgsz": 640,
+  "epochs": 80,
+  "patience": 25,
+  "batch": 16,
+  "workers": 4,
+  "device": "0",
+  "cls": 0.5,
+  "mosaic": 1.0,
+  "close_mosaic": 10,
+  "export_imgsz": 416
+ }
+}

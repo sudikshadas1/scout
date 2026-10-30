@@ -1,0 +1,21 @@
+{
+ "name": "E1c",
+ "weights_start": "yolo26n.pt",
+ "map50": 0.7323358245503663,
+ "map50_95": 0.4692427870611692,
+ "args": {
+  "name": "E1c",
+  "weights": "yolo26n.pt",
+  "data_yaml": "/home/hice1/hpoulin3/scratch/scout_data/scout_cat2x.yaml",
+  "imgsz": 640,
+  "epochs": 80,
+  "patience": 25,
+  "batch": 16,
+  "workers": 4,
+  "device": "0",
+  "cls": 0.5,
+  "mosaic": 1.0,
+  "close_mosaic": 10,
+  "export_imgsz": 416
+ }
+}

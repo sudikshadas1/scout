@@ -13,7 +13,7 @@ exactly the behaviour it will see once the trained model is plugged in. One toke
     n  nothing in view                 f  camera/model fault
     p  cat inside the trap zone AND pressure plate pressed
 
-    python -m edge.stub --script c,c,c,c,c            # closes on frame 4 (K=4 of N=5)
+    python -m edge.stub --script c,c,c,c,c            # closes on frame 3 (K=3 of N=5, set in edge/vision_config.json)
     python -m edge.stub --script c,r,c,c,c,c          # raccoon -> cooldown, stays open
     python -m edge.stub --script c,c,c,c,p --plate    # plate required: closes on 'p'
     python -m edge.stub --interactive

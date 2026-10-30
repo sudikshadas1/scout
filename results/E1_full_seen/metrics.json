@@ -1,0 +1,14 @@
+{
+ "threshold": 0.25,
+ "cat_recall": null,
+ "noncat_fpr": 0.004,
+ "fpr_by_species": {
+  "other_animal": 0.004
+ },
+ "n_cat": 0,
+ "n_noncat": 250,
+ "model": "results/E1_full/weights/best.pt",
+ "split": "seen",
+ "imgsz": 640,
+ "n_images": 250
+}
