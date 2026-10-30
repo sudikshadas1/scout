@@ -116,6 +116,7 @@ data/                    dataset tools (model team, run on PACE ICE)
   build_seen_split.py      "seen locations" test split (new bursts from training cameras)
   make_train_list.py       training list with cat images repeated (E1c, E5) + matching yaml
   add_trap_footage.py      import one labeled session of staged trap footage (props, YOLO export)
+  video_to_frames.py       real-animal videos -> clip folders for vote_sim.py + a pre-labeled frame pool
   scout.yaml               Ultralytics dataset config
 training/                training and evaluation (model team, PACE ICE)
   train_yolo.py            train one detector experiment (E1b, E1c, E5 ...)
@@ -246,6 +247,20 @@ python training/eval.py --model results/E5/weights/best.pt --data ~/scratch/scou
 python -m edge.draw_zones --image pilot/clips/empty_01/<frame>.jpg
 ```
 
+### Real-animal videos (Christine's trail camera)
+
+```bash
+# videos.csv: one line per video, "video,animal" (cat, raccoon, opossum, ..., empty)
+# 1. test the vote and gate on real animals: one 5 fps clip folder per video
+python data/video_to_frames.py --videos ~/christine_videos --labels videos.csv --clips-out real/clips
+python training/vote_sim.py clips --model results/E1b/weights/best.pt --clips real/clips --full-frame
+# 2. labeling pool: one frame per second, pre-labeled by E1b so labeling is correcting
+python data/video_to_frames.py --videos ~/christine_videos --labels videos.csv \
+       --pool-out real/pool --pool-every 1 --prelabel results/E1b/weights/best.pt
+```
+
+Keep whole videos in one split: frames from one video are near-identical.
+
 ### Laptop demo
 
 ```bash
@@ -275,7 +290,7 @@ Each phase ends at a class checkpoint. The model freeze is Nov 16 because Sudiks
 - [ ] Infrared light for night pictures
 - [ ] Footage pilot and labeling round 1 (pick a labeling tool; Roboflow suggested)
 - [ ] Check which "other animal" species are confused with cats
-- [ ] Script to split Christine's videos into frame folders for `vote_sim.py clips`
+- [ ] Run Christine's videos through `data/video_to_frames.py` and `vote_sim.py clips`
 
 ### Making sure the model learns cats, not backgrounds
 
@@ -286,7 +301,8 @@ Test pictures always come from camera locations the model never trained on (`spl
 - **Run on real data:** data pipeline; E0, E1, E1b, E1c and E2 training and evaluation; miss analysis; cutoff/vote estimate; seen-location split.
 - **Written and tested, waiting on prop footage:** trap-footage import, E5 training list, `vote_sim.py clips`.
 - **Written and tested on a laptop:** vision/gate interface, hardware stub, laptop demo and recorder, zone drawing, Pi benchmark and main loop (not yet on the Pi).
-- **Still to write:** black-and-white training data (E4), second-camera support, video-to-frames script for real-animal clips.
+- **Written and tested, waiting on the videos:** `data/video_to_frames.py` for Christine's real-animal videos.
+- **Still to write:** black-and-white training data (E4), second-camera support.
 - **Placeholders:** the trap and doorway zones in `edge/vision_config.json`, until the camera is mounted.
 
 Every file starts with a short header: what it does, its status, and what still needs to change. Read it before editing.
