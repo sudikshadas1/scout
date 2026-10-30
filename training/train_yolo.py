@@ -21,6 +21,8 @@ import argparse
 import json
 from pathlib import Path
 
+from curve import read_run
+
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -67,7 +69,7 @@ def main() -> None:
     )
     metrics = model.val(data=args.data_yaml, split="val", imgsz=args.imgsz)
     summary = {"name": args.name, "weights_start": args.weights, "map50": metrics.box.map50,
-               "map50_95": metrics.box.map, "args": vars(args)}
+               "map50_95": metrics.box.map, "curve": read_run(Path("results", args.name)), "args": vars(args)}
     Path("results", args.name).mkdir(parents=True, exist_ok=True)
     Path("results", args.name, "summary.json").write_text(json.dumps(summary, indent=1, default=str))
     if args.export_imgsz:
