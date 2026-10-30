@@ -6,7 +6,6 @@ Later stages (still to add or change):
   - Phase 2a: swap in our trained NCNN model; set thresholds from eval.py's threshold sweep.
   - Phase 2b: real trap and doorway zones go in vision_config.json once the camera is mounted.
   - If we add a second camera, the aggregator needs to merge two detection lists per tick.
-  - Stretch: ear-tip classifier on the cat crop would add a field to VisionReport.
 
 The vision system answers one question per frame: "what is in front of the camera, and where?"
 It does NOT decide whether to close the gate. That is the gate controller's job (edge/gate.py,
