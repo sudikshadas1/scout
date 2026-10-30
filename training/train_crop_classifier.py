@@ -185,14 +185,14 @@ def main() -> None:
     (out / "metrics.json").write_text(json.dumps(m, indent=1))
     with open(out / "threshold_sweep.csv", "w", newline="") as f:
         wr = csv.writer(f)
-        wr.writerow(["threshold", "cat_recall", "noncat_fpr"])
+        wr.writerow(["threshold", "cat_recall", "animal_fpr", "noncat_fpr"])
         for t in THRESHOLDS:
             s = score(best, t)
-            wr.writerow([t, s["cat_recall"], s["noncat_fpr"]])
+            wr.writerow([t, s["cat_recall"], s["animal_fpr"], s["noncat_fpr"]])
     with open(out / "per_image.csv", "w", newline="") as f:
         csv.writer(f).writerows([("image", "truth", "best_crop_cat_prob"), *best])
     torch.save(net.state_dict(), out / "model.pt")
-    print(f"{args.name}: {m['cat_recall']:.1%} of cats, {m['noncat_fpr']:.1%} false positives @ {args.thr} "
+    print(f"{args.name}: {m['cat_recall']:.1%} of cats, {m['animal_fpr']:.1%} false positives on animals @ {args.thr} "
           f"({cpu_ms:.0f} ms per crop on this CPU)")
     print(f"wrote {out}/metrics.json, threshold_sweep.csv")
 

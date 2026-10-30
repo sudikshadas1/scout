@@ -5,6 +5,8 @@ Purpose: Our training cats are thin: 2,553 pictures, and 71% of the Caltech ones
          box, from 187 cameras. It also gives a new eval set from unseen cameras, because data/splits.json has only 208
          val cats, from 3 cameras. Scores on it are added next to the 500-picture numbers and never replace them.
 Status:  Selection logic tested (tests/test_improvement.py). Metadata and image links checked. Not yet run on PACE.
+         3,000 cats by default, because Wellington has no raccoons or opossums. Cats become 2.5x raccoons (now 1.1x);
+         E1c raised the cats' share and opossum false positives rose, so watch both animals.
 Later stages (still to add or change):
   - Check the contact sheet of selected boxes before the first training run.
 
@@ -163,7 +165,7 @@ def download(row: dict, root: Path, session) -> bool:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
-    ap.add_argument("--cats", type=int, default=6000, help="cat pictures for training")
+    ap.add_argument("--cats", type=int, default=3000, help="cat pictures for training; more shifts the mix further from raccoons and opossums")
     ap.add_argument("--val-cats", type=int, default=1500, help="cat pictures for the new eval set")
     ap.add_argument("--per-location", type=int, default=300, help="most cat pictures from one camera")
     ap.add_argument("--min-conf", type=float, default=0.7, help="MegaDetector confidence for a usable box")

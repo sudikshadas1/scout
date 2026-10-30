@@ -1,7 +1,7 @@
 """Counts what the model actually sees: cats per split, per camera, by time of day and by size in the frame.
 
 Purpose: Explains the model's limits from the metadata alone, with no images needed. Rebuilding the manifest from the
-         public labels matches PACE exactly (21,475 / 8,211 / 8,683 pictures), so these counts are the real ones.
+         public labels matches PACE's totals (21,475 / 8,211 / 8,683 pictures, 208 val cats), so these should be the real counts.
 Status:  Tested (tests/test_improvement.py). Results are in results/data_report.json.
 
     python data/fetch_metadata.py --out ~/scratch/scout_data

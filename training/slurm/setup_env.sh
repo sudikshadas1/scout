@@ -1,7 +1,7 @@
 #!/bin/bash
 # One-time setup on a PACE ICE login node: conda env "scout" + data folder on scratch.
 # Purpose: gives every model-team member the same Python environment for data and training jobs.
-# Status:  Written, not yet run on PACE ICE.
+# Status:  Run on PACE ICE; repeat only on a new account.
 # Later:   if PACE module names differ (see CHECK), fix them here; add packages to requirements.txt, not here.
 #   bash training/slurm/setup_env.sh
 #

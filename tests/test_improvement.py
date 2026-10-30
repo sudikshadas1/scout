@@ -62,6 +62,16 @@ def test_sweep_counts_and_best_under():
     assert best_under(rows, "trap")["cat_recall"] == 0.5
 
 
+def test_empty_pictures_do_not_count_toward_the_animal_goal():
+    records = [{"truth": "cat", "dets": [Detection("cat", 0.9, BOX)]},
+               {"truth": "raccoon", "dets": [Detection("cat", 0.9, BOX)]},
+               {"truth": "raccoon", "dets": []},
+               {"truth": "background", "dets": []},
+               {"truth": "background", "dets": []}]
+    r = next(x for x in sweep(records, 0.6, 0.1) if x["rule"] == "cat_box" and x["cat_cutoff"] == 0.25)
+    assert r["animal_fpr"] == 0.5 and r["noncat_fpr"] == 0.25
+
+
 # ---- add_wellington
 def test_nz_possum_is_not_our_opossum():
     assert wellington_class("possum") == "other_animal"

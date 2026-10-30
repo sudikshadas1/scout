@@ -38,6 +38,13 @@ def test_convert_makes_gray_copies_with_labels(tmp_path):
     assert cv2.imread(str(tmp_path / "images" / "train" / "a.jpg"))[:, :, 2].mean() > 150
 
 
+def test_convert_can_write_a_separate_eval_copy(tmp_path):
+    make_dataset(tmp_path)
+    out = tmp_path / "gray" / "yolo"
+    assert convert(tmp_path, "train", out) == 2
+    assert (out / "images" / "train" / "a.jpg").exists() and (out / "labels" / "train" / "a.txt").exists()
+
+
 def test_yaml_trains_on_gray_and_keeps_val(tmp_path):
     text = yaml_text(tmp_path, "images/train_gray")
     assert "train: images/train_gray" in text and "val: images/val" in text

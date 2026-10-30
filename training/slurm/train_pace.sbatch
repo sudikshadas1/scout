@@ -1,7 +1,7 @@
 #!/bin/bash
 # Train one experiment on PACE ICE with the account/partition that worked for E1 (training/slurm/e1_full.sbatch).
 # Purpose: E1b, E1c and later runs go through training/train_yolo.py so settings are recorded in summary.json.
-# Status:  Header copied from the working e1_full.sbatch. Not yet run with train_yolo.py.
+# Status:  Run on PACE for E1b and E1c.
 #   sbatch -J scout-E1b training/slurm/train_pace.sbatch E1b --epochs 80 --patience 25
 #   sbatch -J scout-E1c training/slurm/train_pace.sbatch E1c --epochs 80 --patience 25 \
 #          --data-yaml ~/scratch/scout_data/scout_cat2x.yaml

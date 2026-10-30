@@ -44,7 +44,9 @@ def score(best: list[tuple[str, str, float]], thr: float) -> dict:
             v[0] += c >= thr
     n_non = sum(v[1] for v in per.values())
     fp = sum(v[0] for v in per.values())
+    bg = per.get("background", [0, 0])
     return {"threshold": thr, "cat_recall": tp / n_cat if n_cat else None,
+            "animal_fpr": (fp - bg[0]) / (n_non - bg[1]) if n_non > bg[1] else None,
             "noncat_fpr": fp / n_non if n_non else None,
             "fpr_by_species": {k: v[0] / v[1] for k, v in sorted(per.items())}, "n_cat": n_cat, "n_noncat": n_non}
 
@@ -161,14 +163,14 @@ def main() -> None:
     (out / "metrics.json").write_text(json.dumps(m, indent=1))
     with open(out / "threshold_sweep.csv", "w", newline="") as f:
         wr = csv.writer(f)
-        wr.writerow(["threshold", "cat_recall", "noncat_fpr"])
+        wr.writerow(["threshold", "cat_recall", "animal_fpr", "noncat_fpr"])
         for t in THRESHOLDS:
             s = score(best, t)
-            wr.writerow([t, s["cat_recall"], s["noncat_fpr"]])
+            wr.writerow([t, s["cat_recall"], s["animal_fpr"], s["noncat_fpr"]])
     with open(out / "per_image.csv", "w", newline="") as f:
         csv.writer(f).writerows([("image", "truth", "cat_prob"), *best])
     torch.save(net.state_dict(), out / "model.pt")
-    print(f"{args.name}: cat recall {m['cat_recall']:.1%}  non-cat FPR {m['noncat_fpr']:.1%} @ {args.thr}"
+    print(f"{args.name}: cat recall {m['cat_recall']:.1%}  animal FPR {m['animal_fpr']:.1%} @ {args.thr}"
           f"  ({cpu_ms:.0f} ms/image on this CPU)")
     print(f"wrote {out}/metrics.json, threshold_sweep.csv")
 

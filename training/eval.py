@@ -1,6 +1,7 @@
-"""Measures cat recall and per-species false-positive rate (including empty backgrounds), plus a threshold sweep.
+"""Measures cat recall and false positives on animals (the goal) and on all non-cats, plus a threshold sweep.
 
-Purpose: These are the numbers the plan and checkpoints report; they also pick the per-class thresholds in vision_config.json.
+Purpose: The goal is under 5% of other animals called cats, so animal_fpr leaves out empty pictures. noncat_fpr keeps
+         them, so past runs still compare. These are the numbers the plan and checkpoints report; they also pick the per-class thresholds in vision_config.json.
 Status:  Run on E0 through E2. Scores so far are at imgsz 640; the Pi 3's size still has to be scored.
 Later stages (still to add or change):
   - Phase 2a: add a seen-location vs new-location breakdown once splits.py has a seen-location split.
@@ -101,9 +102,11 @@ def main() -> None:
                 per[t][0] += c >= thr
         fp = sum(v[0] for v in per.values())
         n_non = sum(v[1] for v in per.values())
+        bg = per.get("background", [0, 0])
         return {
             "threshold": thr,
             "cat_recall": tp / n_cat if n_cat else None,
+            "animal_fpr": (fp - bg[0]) / (n_non - bg[1]) if n_non > bg[1] else None,
             "noncat_fpr": fp / n_non if n_non else None,
             "fpr_by_species": {k: v[0] / v[1] for k, v in sorted(per.items()) if v[1]},
             "n_cat": n_cat,
@@ -117,17 +120,18 @@ def main() -> None:
     (out / "metrics.json").write_text(json.dumps(main_score, indent=1))
     with open(out / "threshold_sweep.csv", "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["threshold", "cat_recall", "noncat_fpr"])
+        w.writerow(["threshold", "cat_recall", "animal_fpr", "noncat_fpr"])
         for thr in THRESHOLDS:
             s = score(thr)
-            w.writerow([thr, s["cat_recall"], s["noncat_fpr"]])
+            w.writerow([thr, s["cat_recall"], s["animal_fpr"], s["noncat_fpr"]])
     with open(out / "per_image.csv", "w", newline="") as f:
         csv.writer(f).writerows([("image", "truth", "best_cat_conf"), *best])
 
-    r, fpr = main_score["cat_recall"], main_score["noncat_fpr"]
+    r, fpr, afpr = main_score["cat_recall"], main_score["noncat_fpr"], main_score["animal_fpr"]
     print(f"{args.name}: {len(best)} images ({main_score['n_cat']} cat / {main_score['n_noncat']} non-cat) @ thr {args.thr}")
     print(f"  cat recall   {r:.1%}   (goal >= 75%)" if r is not None else "  no cat images")
-    print(f"  non-cat FPR  {fpr:.1%}   (target < 5%)" if fpr is not None else "  no non-cat images")
+    print(f"  animal FPR   {afpr:.1%}   (goal < 5%)" if afpr is not None else "  no animal non-cat images")
+    print(f"  with empties {fpr:.1%}" if fpr is not None else "  no non-cat images")
     for sp, v in main_score["fpr_by_species"].items():
         print(f"    {sp:13s} called cat {v:.1%}")
     print(f"  wrote {out}/metrics.json, threshold_sweep.csv, per_image.csv")

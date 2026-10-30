@@ -29,7 +29,7 @@ Every model and setting has to run on the Pi 3. A better score that the Pi 3 can
 
 ## Status (Oct 30)
 
-- **Model:** best run is **E1b**, with **69.2%** of cats caught and **4.8%** false positives (cutoff 0.25, at 640 pixels). False positives meet the goal, but cats caught are 5.8 points short. It finds an animal in 92% of cat pictures, and most of its misses are wrong labels. These scores aren't at the trap's 416 pixels yet.
+- **Model:** best run is **E1b**, with **67.8%** of cats caught and **4.9%** of other animals called cats (cutoff 0.35, at 640 pixels), the best it reaches under the 5% goal. That is 15 cats short of 75%. It finds an animal in 92% of cat pictures, and most of its misses are wrong labels. These scores aren't at the trap's 416 pixels yet.
 - **Hardware:** the tabletop prototype is built. Next is programming the Pi 3 and setting it up on the trap. No Pi 3 speed number yet.
 - **Gate decision:** the gate stays open while armed and closes only when the camera reports a cat in the trap **and** the pressure plate is pressed.
 
@@ -175,14 +175,14 @@ cd ~/scout && git pull
 | --- | --- | --- |
 | Wellington data | Downloads the E7 data and new eval set | `sbatch training/slurm/e7_data.sbatch` |
 | Score E1b | E1b at the trap's 416 pixels | `sbatch training/slurm/eval_pace.sbatch E1b 500 416` |
-| E7 | Adds Wellington data | `sbatch --time=14:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_e7.yaml` |
+| E7 | Adds Wellington data | `sbatch --time=12:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_e7.yaml` |
 | E8 | Crop check, using E1b's scores | `sbatch training/slurm/e8_crop.sbatch` |
 | E9 | Higher classification loss | `sbatch -J scout-E9 training/slurm/train_pace.sbatch E9 --cls 1.0 --epochs 80 --patience 25` |
 | E3 | Bigger model, if the Pi 3 speed test allows | `sbatch -J scout-E3 training/slurm/train_pace.sbatch E3 --weights yolo26s.pt --epochs 80 --patience 25` |
-| E4 | Black-and-white training (make the copies first) | `sbatch training/slurm/run.sbatch python data/make_grayscale.py --data ~/scratch/scout_data`, then `sbatch -J scout-E4 training/slurm/train_pace.sbatch E4 --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_gray.yaml` |
+| E4 | Black-and-white training (make the copies first) | `sbatch training/slurm/run.sbatch python data/make_grayscale.py --data ~/scratch/scout_data`, then `sbatch -J scout-E4 training/slurm/train_pace.sbatch E4 --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_gray.yaml`. Score it on the grayscale copy too (see the CV model update) |
 | E10 | Training at 416, if E1b drops at 416 | `sbatch -J scout-E10 training/slurm/train_pace.sbatch E10 --imgsz 416 --epochs 80 --patience 25` |
 
-E7 is estimated at about 11 hours, and training jobs default to 8. Training can't resume after a time-out, so if PACE refuses the longer time, use `--epochs 50`.
+E7 is estimated at about 9.5 hours, and training jobs default to 8. Training can't resume after a time-out, so if PACE refuses the longer time, use `--epochs 60`. It adds 3,000 cats by default; watch raccoon and opossum false positives, because Wellington has neither animal.
 
 **4. Score every finished detector run** the same way. E8 scores itself.
 

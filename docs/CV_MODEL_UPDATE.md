@@ -4,7 +4,7 @@ Experiment results, what limits the model, the plan to improve it, and how runs 
 
 ## Results so far
 
-Validation: 500 pictures (208 cats, 292 non-cats) from camera locations never used in training, scored at 640 pixels. The trap runs at 416 pixels, which hasn't been scored yet. Each cell is cat recall / false positives.
+Validation: 500 pictures (208 cats, 292 non-cats) from camera locations never used in training, scored at 640 pixels. The trap runs at 416 pixels, which hasn't been scored yet. Each cell is cats caught / false positives, where this table's false positives include the 67 empty pictures among the 292 non-cats, so runs compare with the old logs. **The goal counts animals only** (see below).
 
 | Run | Change | Cutoff 0.05 | Cutoff 0.15 (trap now) | Cutoff 0.25 |
 | --- | --- | --- | --- | --- |
@@ -30,18 +30,30 @@ Planned: **E3** bigger model (YOLO26s), **E4** black-and-white training, **E5** 
 
 ## Reaching the goals
 
-| | Goal | E1b today (cutoff 0.25) | Gap on the 500-picture set |
+| | Goal | E1b today (cutoff 0.35) | Gap on the 500-picture set |
 | --- | --- | --- | --- |
-| Cats caught | at least 75% (aiming for 80%) | 69.2% (144 of 208) | 12 more cats for 75%, 23 more for 80% |
-| False positives | under 5%, as low as possible | 4.8% (14 of 292) | no room: 15 false positives is over 5% |
+| Cats caught | at least 75% (aiming for 80%) | 67.8% (141 of 208) | 15 more cats for 75%, 26 more for 80% |
+| False positives on animals | under 5%, as low as possible | 4.9% (11 of 225) | no room: a 12th false positive is 5.3% |
 
-**Changing the cutoff can't close this gap.** Lowering E1b's cutoff trades false positives for recall: 0.15 gives 71.2% recall and 6.5% FPR, and 0.05 gives 73.1% and 9.9%. Under 5%, the most E1b reaches is 69.2%. The model itself has to tell cats from other animals better, so the 47 mislabeled cats are the main target.
+**The goal is about animals, so empty pictures don't count.** They made up 67 of the 292 non-cats and flattered the old number:
 
-**Decision rule:** keep the model that reaches at least 75% of cats with under 5% false positives at 416 pixels and fits the time budget on the Pi 3. That model goes into E5 and is frozen by Nov 16.
+| E1b cutoff | Cats caught | False positives, with empties | On animals only |
+| --- | --- | --- | --- |
+| 0.15 (trap now) | 71.2% | 6.5% | about 8.4% |
+| 0.25 | 69.2% | 4.8% | 6.2% (14 of 225) |
+| 0.30 | 68.3% | 4.1% | 5.3% |
+| **0.35** | **67.8%** | **3.8%** | **4.9% (11 of 225)** |
+| 0.40 | 64.9% | 3.4% | 4.4% |
+
+The 0.15 figure assumes no false positives on empty pictures there, which is confirmed only at 0.25. `eval.py` now reports `animal_fpr`.
+
+**Changing the cutoff can't close this gap.** Under 5% on animals, the most E1b reaches is 67.8%. The model itself has to tell cats from other animals better, so the 47 mislabeled cats are the main target.
+
+**Decision rule:** keep the model that reaches at least 75% of cats with under 5% of other animals called cats at 416 pixels and fits the time budget on the Pi 3. That model goes into E5 and is frozen by Nov 16.
 
 ## What limits the model
 
-Counted from the public metadata; rebuilding the manifest matches PACE exactly, see `results/data_report.json`.
+Counted from the public metadata; rebuilding the manifest matches PACE's totals, see `results/data_report.json`.
 
 | | Training | Validation | Test |
 | --- | --- | --- | --- |
@@ -60,7 +72,7 @@ E0–E6 are from the CV Team Updates tab. E7–E10 are new: add them to the doc.
 
 | Run | What changes | Why | Cost on the Pi 3 |
 | --- | --- | --- | --- |
-| E7 | Add Wellington cats, non-cats and empties from the same cameras | Our cats come from too few cameras and are almost never large | None |
+| E7 | Add 3,000 Wellington cats, plus non-cats and empties from the same cameras | Our cats come from too few cameras and are almost never large | None |
 | E8 | Cat / not-cat check on each detected animal's crop | Most misses are found but mislabeled | One small classifier per detected animal; time it |
 | E9 | Classification loss weight 1.0 | Most misses are wrong labels | None |
 | E10 | Train at 416 pixels | Only if step 1 shows a drop at 416 | None |
@@ -73,12 +85,12 @@ E0–E6 are from the CV Team Updates tab. E7–E10 are new: add them to the doc.
    sbatch training/slurm/e7_data.sbatch
    sbatch training/slurm/eval_pace.sbatch E1b 500 416     # run after the data job finishes
    ```
-2. **Re-tune the cutoff and vote** for under 5% false positives, from `results/E1b_pipeline416/pipeline_sweep.csv`, then update `edge/vision_config.json`.
+2. **Re-tune the cutoff and vote** for under 5% false positives on animals (`animal_fpr`), from `results/E1b_pipeline416/pipeline_sweep.csv`, then update `edge/vision_config.json`.
 3. **Look at the mistakes** in the contact sheets in `results/E1b_analysis416/` (on PACE). Are the `other_animal` false positives bobcats? Are the colour-picture misses from one camera?
 4. **E6: Pi 3 speed.** The number decides the picture size and whether E3 fits.
-5. **Run E7, E8 and E9.** They can run side by side. E7 is estimated at about 11 hours from E1's speed, so ask for more time, or use `--epochs 50` if PACE refuses.
+5. **Run E7, E8 and E9.** They can run side by side. E7 is estimated at about 9.5 hours from E1's speed, so ask for more time, or use `--epochs 60` if PACE refuses.
    ```bash
-   sbatch --time=14:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 --epochs 80 --patience 25 \
+   sbatch --time=12:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 --epochs 80 --patience 25 \
           --data-yaml ~/scratch/scout_data/scout_e7.yaml
    sbatch training/slurm/e8_crop.sbatch
    sbatch -J scout-E9 training/slurm/train_pace.sbatch E9 --cls 1.0 --epochs 80 --patience 25
@@ -91,12 +103,20 @@ E0–E6 are from the CV Team Updates tab. E7–E10 are new: add them to the doc.
    sbatch -J scout-E4 training/slurm/train_pace.sbatch E4 --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_gray.yaml
    sbatch -J scout-E10 training/slurm/train_pace.sbatch E10 --imgsz 416 --epochs 80 --patience 25
    ```
+   Score E4 on the original pictures with `eval_pace.sbatch E4 500 416`, and on the grayscale copy with `sbatch training/slurm/run.sbatch python training/eval.py --model results/E4/weights/best.pt --data ~/scratch/scout_data/gray --split val --n 500 --imgsz 416 --name E4_gray416`. If E4 wins, the Pi code must convert frames to grayscale first.
 7. **Backyard videos: test the vote and gate on real motion** (see "Real-animal videos" below). Don't train on them as they are.
 8. **Once the camera is on the trap:** footage pilot, prop labeling, then E5 from the best model.
 
+## Risks to the plan
+
+- **E7 could raise false positives.** Wellington has no raccoons or opossums, so 3,000 more cats take cats from 1.1× raccoons to 2.5×. When E1c raised the cats' share, opossum false positives went from 2 to 8. If E7 does well on cats and safely on animals, try more with `--cats`.
+- **The trap misses large cats with the placeholder zones.** A cat's whole bottom edge must be inside the trap zone, so a close-up cat isn't "in trap" and also sets off the doorway check (`tests/test_vision.py` records this). Test with a close-up prop as soon as the camera is mounted, and change the rule if real zones don't fix it. `--full-frame` tests skip zones, so they won't catch it.
+- **The Pi 3 is unmeasured.** The Pi code loads through Ultralytics and PyTorch on 1 GB of RAM. If that doesn't fit, the detector code has to change, and that comes before any experiment.
+- **208 validation cats is thin.** Picking the best of many runs on them can flatter the winner, so use the Wellington set too and run the test split only once.
+
 ## How a run wins
 
-A run wins if it beats E1b on cats caught with under 5% false positives at 416 pixels on the 500 pictures, also improves on the Wellington eval set, doesn't raise false positives on any one animal, and fits the time budget on the Pi 3. Differences of a few points on 208 cats can be noise. The test split runs once, at the freeze.
+A run wins if it beats E1b on cats caught with under 5% of other animals called cats at 416 pixels on the 500 pictures, also improves on the Wellington eval set, doesn't raise false positives on any one animal, and fits the time budget on the Pi 3. Differences of a few points on 208 cats can be noise. The test split runs once, at the freeze.
 
 ## Hand-off to the Pi 3
 
@@ -122,13 +142,13 @@ Chain the first jobs so nothing starts before its data is ready:
 ```bash
 DATA=$(sbatch --parsable training/slurm/e7_data.sbatch)
 SCORE=$(sbatch --parsable --dependency=afterok:$DATA training/slurm/eval_pace.sbatch E1b 500 416)
-sbatch --dependency=afterok:$DATA --time=14:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 \
+sbatch --dependency=afterok:$DATA --time=12:00:00 -J scout-E7 training/slurm/train_pace.sbatch E7 \
        --epochs 80 --patience 25 --data-yaml ~/scratch/scout_data/scout_e7.yaml
 sbatch --dependency=afterok:$SCORE training/slurm/e8_crop.sbatch
 sbatch -J scout-E9 training/slurm/train_pace.sbatch E9 --cls 1.0 --epochs 80 --patience 25
 ```
 
-E7 is estimated at about 11 hours from E1's speed, and jobs default to 8. If PACE refuses `--time=14:00:00`, use `--epochs 50`: training can't resume after a time-out yet.
+E7 is estimated at about 9.5 hours from E1's speed, and jobs default to 8. If PACE refuses `--time=12:00:00`, use `--epochs 60`: training can't resume after a time-out yet.
 
 ## Real-animal videos
 

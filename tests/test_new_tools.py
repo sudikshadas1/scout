@@ -37,6 +37,11 @@ def test_sweep_rows():
     assert r["trap_recall_est"] == pytest.approx(0.5) and r["trap_fpr_est"] < 0.001
 
 
+def test_sweep_prefers_animal_fpr():
+    r = sweep_rows([{"threshold": "0.25", "cat_recall": "0.7", "animal_fpr": "0.062", "noncat_fpr": "0.048"}])[0]
+    assert r["frame_fpr"] == pytest.approx(0.062)
+
+
 def test_best_rows_limits_the_single_frame_rate():
     # E1b's numbers: 0.05 is over 5% per frame even though its trap estimate is under 1%
     rows = sweep_rows([{"threshold": "0.05", "cat_recall": "0.731", "noncat_fpr": "0.099"},

@@ -16,6 +16,8 @@ Writes results/<name>/pipeline_sweep.csv and detections.jsonl. Rules in the swee
     cat_box   any cat box over the cutoff (the same rule as eval.py)
     one_label also drop the weaker label when two boxes cover one animal (edge/vision.py)
     trap      also no confident non-cat in the frame, since that holds the gate open
+animal_fpr is the goal (empty pictures left out). Cutoffs under 0.1 are only for comparison: the Pi's Detector drops
+anything below min_conf=0.1.
 """
 from __future__ import annotations
 
@@ -52,6 +54,7 @@ def sweep(records: list[dict], same_iou: float, margin: float) -> list[dict]:
     """records: [{"truth": str, "dets": [Detection]}] -> one row per rule x cutoffs."""
     n_cat = sum(r["truth"] == "cat" for r in records)
     n_non = len(records) - n_cat
+    n_bg = sum(r["truth"] == "background" for r in records)
     rows = []
     for rule in RULES:
         for cat_cut in CAT_CUTOFFS:
@@ -60,15 +63,17 @@ def sweep(records: list[dict], same_iou: float, margin: float) -> list[dict]:
                 called = [calls_cat(r["dets"], rule, cat_cut, noncat_cut, same_iou, margin) for r in records]
                 tp = sum(c for c, r in zip(called, records) if r["truth"] == "cat")
                 fp = sum(c for c, r in zip(called, records) if r["truth"] != "cat")
+                fp_bg = sum(c for c, r in zip(called, records) if r["truth"] == "background")
                 rows.append({"rule": rule, "cat_cutoff": cat_cut, "noncat_cutoff": noncat_cut,
                              "cat_recall": tp / n_cat if n_cat else None,
+                             "animal_fpr": (fp - fp_bg) / (n_non - n_bg) if n_non > n_bg else None,
                              "noncat_fpr": fp / n_non if n_non else None, "cats_caught": tp, "false_positives": fp})
     return rows
 
 
 def best_under(rows: list[dict], rule: str, max_fpr: float = 0.05) -> dict | None:
-    ok = [r for r in rows if r["rule"] == rule and r["noncat_fpr"] is not None and r["noncat_fpr"] < max_fpr]
-    return max(ok, key=lambda r: (r["cat_recall"], -r["noncat_fpr"]), default=None)
+    ok = [r for r in rows if r["rule"] == rule and r["animal_fpr"] is not None and r["animal_fpr"] < max_fpr]
+    return max(ok, key=lambda r: (r["cat_recall"], -r["animal_fpr"]), default=None)
 
 
 def main() -> None:
@@ -117,7 +122,7 @@ def main() -> None:
     for rule in RULES:
         b = best_under(rows, rule)
         print(f"  {rule:10s} " + (f"cat cutoff {b['cat_cutoff']:.2f}, non-cat cutoff {b['noncat_cutoff']:.1f}: "
-                                  f"{b['cat_recall']:.1%} of cats, {b['noncat_fpr']:.1%} false positives" if b else "none"))
+                                  f"{b['cat_recall']:.1%} of cats, {b['animal_fpr']:.1%} false positives on animals" if b else "none"))
     print(f"wrote {out}/pipeline_sweep.csv, detections.jsonl")
 
 

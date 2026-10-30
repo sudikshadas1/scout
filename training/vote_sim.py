@@ -3,7 +3,8 @@
 Purpose: The gate acts on the vote, not on single frames. A per-frame recall that looks fine can still give a
          low trap-level recall (60% per frame -> ~34% for 4-of-5), so the cutoff and K have to be chosen together.
 Status:  Written; vote logic tested (tests/test_new_tools.py). Clip mode needs recorded clips (footage pilot).
-         Goal is under 5% false positives (--max-fpr). Sweep mode applies it to the single-frame rate: the
+         Goal is under 5% of animals called cats (--max-fpr), so empty pictures and empty_ clips are left out. Sweeps
+         made before animal_fpr existed fall back to noncat_fpr. Sweep mode applies it to the single-frame rate: the
          independent-frame trap estimate is far too low (E1b at cutoff 0.05 is 9.9% per frame, 0.8% estimated).
          --fps defaults to 5, but the Pi 3 may run slower: use the rate edge/bench.py measures.
 
@@ -48,7 +49,7 @@ def p_at_least(k: int, n: int, p: float) -> float:
 def sweep_rows(sweep: list[dict], fps: float = 5.0) -> list[dict]:
     rows = []
     for r in sweep:
-        p, q = float(r["cat_recall"]), float(r["noncat_fpr"])
+        p, q = float(r["cat_recall"]), float(r.get("animal_fpr") or r["noncat_fpr"])
         for n, k in VOTES:
             rows.append({"cutoff": float(r["threshold"]), "N": n, "K": k, "frame_recall": p, "frame_fpr": q,
                          "trap_recall_est": p_at_least(k, n, p), "trap_fpr_est": p_at_least(k, n, q),
@@ -126,11 +127,11 @@ def main() -> None:
         rows = []
         for cutoff, (n, k) in product(CUTOFFS, VOTES):
             fired = [(is_cat, kind, replay(fr, cutoff, n, k, cfg, args.full_frame)) for is_cat, kind, fr in data]
-            closed = [(is_cat, replay(fr, cutoff, n, k, cfg, args.full_frame, gate=True, fps=args.fps)) for is_cat, _, fr in data]
+            closed = [(is_cat, kind, replay(fr, cutoff, n, k, cfg, args.full_frame, gate=True, fps=args.fps)) for is_cat, kind, fr in data]
             cats = [f for c_, _, f in fired if c_]
-            non = [f for c_, _, f in fired if not c_]
-            gc = [f for c_, f in closed if c_]
-            gn = [f for c_, f in closed if not c_]
+            non = [f for c_, kd, f in fired if not c_ and kd != "empty"]
+            gc = [f for c_, _, f in closed if c_]
+            gn = [f for c_, kd, f in closed if not c_ and kd != "empty"]
             rows.append({"cutoff": cutoff, "N": n, "K": k,
                          "trap_recall": sum(cats) / len(cats) if cats else None,
                          "trap_fpr": sum(non) / len(non) if non else None,
