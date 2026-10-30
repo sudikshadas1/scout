@@ -14,10 +14,10 @@ Design docs: [SCOUT - Research/Notes](https://docs.google.com/document/d/1BFhBik
 
 Props are not real animals, so prop footage is used to check the camera angle, lighting, zones, vote and gate, not to report accuracy.
 
-## Status (Oct 24)
+## Status (Oct 30)
 
-- **Model:** E1 (YOLO26n fine-tuned on Caltech Camera Traps + ENA24) catches 63.5% of cats on new camera locations, with about 2% false positives. The recall runs E1b and E1c, the seen-location score and the E2 comparison are ready to run on PACE.
-- **Hardware:** the stub, gate logic and Pi benchmark are written. Waiting on the trap, the camera mount position, the Pi with a camera, and an infrared light.
+- **Model:** E1b (YOLO26n fine-tuned on Caltech Camera Traps + ENA24, 80 epochs) is the current model. On new camera locations it catches 73.1% of cats with 9.9% false positives per picture (cutoff 0.05), and 71.2% / 6.5% at the trap's cutoff of 0.15. With the trap's 3-of-5 vote, the estimate is about 85% of cats caught at the trap level.
+- **Hardware:** the tabletop prototype is built. Next: program the Pi, mount everything on the trap, and connect the servo and pressure plate to `edge/run_trap.py`.
 
 ## How it works
 
@@ -75,11 +75,11 @@ from edge.gate import GateController, Command
 
 detector = Detector("best_ncnn_model", imgsz=416)
 vision = VisionAggregator.from_config()       # edge/vision_config.json
-gate = GateController(require_plate=False)
+gate = GateController(require_plate=True)    # gate decision: cat in trap + plate pressed
 gate.arm()
 
 report = vision.update(detector.detect(frame))   # model team
-status = gate.tick(report, plate_pressed=False)  # hardware team
+status = gate.tick(report, plate_pressed=plate_pressed())  # hardware team
 if status.command == Command.CLOSE:
     close_gate()
 ```
@@ -175,61 +175,62 @@ python data/validate_dataset.py
 python3 -m venv --system-site-packages .venv && source .venv/bin/activate   # keeps picamera2
 pip install -r requirements-pi.txt
 python -m edge.stub --interactive
-python -m edge.bench --model yolo26n.pt --export ncnn --imgsz 416 --runs 200
-python -m edge.run_trap --model yolo26n_ncnn_model
+python -m edge.bench --model best.pt --export ncnn --imgsz 416 --runs 200   # best.pt = E1b
+python -m edge.run_trap --model best_ncnn_model --plate
 ```
 
 ## CV results
 
-Validation set: 500 pictures (208 cats) from camera locations the model never trained on.
+Validation set: the same 500 pictures (208 cats, 292 non-cats) from camera locations the model never trained on. Recall is the share of cats called "cat"; FPR is the share of non-cats called "cat", per picture. The trap uses cutoff 0.15.
 
-| Run | What changed | Cat recall @0.05 | Cat recall @0.25 | Non-cat FPR @0.25 |
-| --- | --- | --- | --- | --- |
-| E0 | stock YOLO26n, no training | 4.3% | | 2.1% |
-| E1 | fine-tuned on Caltech + ENA24, 24 epochs | 63.5% | 54.8% | 2.1% |
-| E1b | E1, trained longer (80 epochs) | pending | | |
-| E1c | E1b + cat pictures shown twice | pending | | |
-| E2 | MobileNetV3 classifier (comparison only) | pending | | |
+| Run | What changed | Recall @0.05 | FPR @0.05 | Recall @0.15 | FPR @0.15 |
+| --- | --- | --- | --- | --- | --- |
+| E0 | stock YOLO26n, no training | 5.3% | 5.1% | 4.8% | 2.7% |
+| E1 | fine-tuned on Caltech + ENA24, 24 epochs | 63.5% | 4.5% | 59.6% | 2.4% |
+| **E1b** | **E1 settings, trained longer (80 epochs)** | **73.1%** | **9.9%** | **71.2%** | **6.5%** |
+| E1c | E1b + cat pictures shown twice | 70.7% | 6.8% | 69.7% | 5.8% |
+| E2 | MobileNetV3 cat / not-cat classifier (comparison only) | 27.9% | 6.2% | 22.6% | 3.8% |
 
-The plan's E3 ("add ENA24") is already part of E1. Only 2% of the 25% false-positive budget is used, so the next runs trade some of it for recall.
+The plan's E3 ("add ENA24") is already part of E1. Files: `results/<run>_eval/` (scores and cutoff sweep) and `results/<run>_analysis/` (why cats are missed).
 
-### Decisions on Oct 24
+### What the results show (Oct 30)
 
-**Cutoff and vote.** The trap acts on a vote across frames, not on one picture. With the old settings (cat cutoff 0.5, 4-of-5 vote), `training/vote_sim.py` estimates E1 would trigger on only about 9% of cats. The config is now cutoff 0.15 with a 3-of-5 vote: an estimated 68% at the trap level and about 0.01% false positives. The estimate assumes frames are independent, so re-measure it on staged clips with `vote_sim.py clips`, which also replays the real gate.
+- **E1b is the model to build on.** Showing cat pictures twice (E1c) did not beat it, and the classifier (E2) is far behind and can't say where the cat is.
+- **Most misses are wrong labels, not missed animals.** At cutoff 0.25, E1b misses 64 of 208 cats (E1: 94): 47 called another animal, 14 not found, 3 found with low cat confidence. The missed cats were called other animal 18 times, raccoon 11, opossum 10, dog 5 and squirrel 3.
+- **"Other animal" is the main confusion both ways.** It is also the class most often called a cat (12.9% of other-animal pictures at 0.25; raccoon 4.4%, opossum 3.0%). This class holds bobcats, coyotes and similar animals; checking which species are involved is the next step.
+- **Small and daytime cats are hardest.** E1b catches 89% of medium cats, 69% of small and 50% of tiny ones; our trap camera sees cats up close. 186 of the 208 cats are night (black-and-white) pictures, caught 74% of the time; the 22 daytime cats are caught only 6 times by both E1 and E1b. That is a small sample, but worth checking with prop footage.
+- **Seen-location score:** no unseen cat pictures were left at the training cameras, so seen vs new recall could not be compared. On 250 non-cat pictures from training cameras, E1 called 0.4% cats.
 
-**One animal, one label.** If the model labeled the same cat "cat" and also "opossum" in one frame, the gate entered its 10-second non-cat cooldown and never closed on that cat. Now the weaker label on the same box is dropped, but only when the stronger one is at least 0.1 more confident. Close calls keep both, so a possible non-cat still holds the gate open (`same_animal_iou`, `same_animal_margin` in `vision_config.json`).
+### Trap settings
+
+**Cutoff and vote.** The trap acts on a vote across frames, not on one picture. `training/vote_sim.py` estimates trap-level results from each run's cutoff sweep (`results/<run>_eval/vote_sweep.csv`). For E1b, the current config (cutoff 0.15, 3-of-5 vote) gives an estimated 85.2% of cats caught and 0.25% false triggers; the old config (0.5, 4-of-5) would give 37.3%. The estimate assumes frames are independent, so it must be re-measured on staged clips with `vote_sim.py clips`, which also replays the real gate.
+
+**One animal, one label.** If the model labels the same cat "cat" and also "opossum" in one frame, the weaker label is dropped, but only when the stronger one is at least 0.1 more confident. Close calls keep both, so a possible non-cat still holds the gate open (`same_animal_iou`, `same_animal_margin` in `vision_config.json`). Before this rule, such a cat put the gate into its 10-second non-cat cooldown.
 
 ## Next CV runs
 
 Step-by-step with explanations: the **CV Team - Next Steps** tab.
 
 ```bash
-# 0. get the latest code on PACE
-cd ~/scout && git fetch && git checkout cv/recall-analysis-demo && git reset --hard origin/cv/recall-analysis-demo
-#    (after PR #1 is merged: git checkout main && git pull)
+# get the latest code on PACE
+cd ~/scout && git checkout main && git pull
 
-# 1. E1: why cats are missed + cutoff/vote estimate
-sbatch training/slurm/eval_pace.sbatch E1_full
-# 2. recall experiments, in parallel
-sbatch -J scout-E1b training/slurm/train_pace.sbatch E1b --epochs 80 --patience 25
-python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2
-sbatch -J scout-E1c training/slurm/train_pace.sbatch E1c --epochs 80 --patience 25 \
-       --data-yaml ~/scratch/scout_data/scout_cat2x.yaml
-# 3. seen-location score and the E2 comparison
-sbatch training/slurm/seen.sbatch E1_full
-sbatch training/slurm/e2.sbatch
-# 4. when E1b / E1c finish
-sbatch training/slurm/eval_pace.sbatch E1b && sbatch training/slurm/eval_pace.sbatch E1c
+# score a finished run: eval + miss analysis + cutoff/vote estimate
+sbatch training/slurm/eval_pace.sbatch E1b
+# E5 (needs labeled prop footage, see below), starting from E1b
+sbatch -J scout-E5 training/slurm/train_pace.sbatch E5 --weights results/E1b/weights/best.pt --epochs 40 \
+       --data-yaml ~/scratch/scout_data/scout_e5.yaml
+sbatch training/slurm/eval_pace.sbatch E5      # re-score on the real-animal public pictures
 ```
 
-What to read: `results/<run>_analysis/summary.json`, where `recall_by_size.large` is the number closest to our close-range camera; `results/E1_full_seen/metrics.json` against `results/E1_full_eval/metrics.json`, where a big gap means the model learned backgrounds; `results/E2/metrics.json`.
+What to read: `results/<run>_eval/metrics.json` (`fpr_by_species`: which animals are called cats), `results/<run>_analysis/summary.json` (`missed_cats_called`, `recall_by_size`, `recall_by_night`) and `results/<run>_eval/vote_sweep.csv` (trap-level estimate).
 
 ### Staged trap footage (props, no live animals)
 
 ```bash
 # record one staged trial per folder, named by what is in it (cat_, raccoon_, opossum_, empty_ ...)
-python -m edge.demo --model yolo26n.pt --source 0 --save-dir pilot/clips/cat_01      # press r to record
-python -m edge.demo --model yolo26n.pt --picam --headless --record --save-dir pilot/clips/empty_01  # on the Pi
+python -m edge.demo --model results/E1b/weights/best.pt --source 0 --save-dir pilot/clips/cat_01      # press r to record
+python -m edge.demo --model best_ncnn_model --picam --headless --record --save-dir pilot/clips/empty_01  # on the Pi
 # trap-level recall and gate behaviour on those clips, for every cutoff x vote setting
 python training/vote_sim.py clips --model best.pt --clips pilot/clips --full-frame
 # after labeling a session (YOLO export from Roboflow / CVAT / Label Studio); keep 1-2 whole sessions as test
@@ -238,7 +239,7 @@ python data/add_trap_footage.py --data ~/scratch/scout_data --export session4_yo
 # E5: public data + our prop footage (repeated 3x), then the staged test on held-out trap sessions
 python data/make_train_list.py --data ~/scratch/scout_data --cat-repeat 2 \
        --extra-dir ~/scratch/scout_data/trap/yolo/images/train --extra-repeat 3 --tag e5
-sbatch -J scout-E5 training/slurm/train_pace.sbatch E5 --weights results/E1c/weights/best.pt --epochs 40 \
+sbatch -J scout-E5 training/slurm/train_pace.sbatch E5 --weights results/E1b/weights/best.pt --epochs 40 \
        --data-yaml ~/scratch/scout_data/scout_e5.yaml
 python training/eval.py --model results/E5/weights/best.pt --data ~/scratch/scout_data/trap --split test --name E5_trap
 # once the camera is mounted: draw the trap and doorway zones on a real frame, then commit vision_config.json
@@ -248,7 +249,7 @@ python -m edge.draw_zones --image pilot/clips/empty_01/<frame>.jpg
 ### Laptop demo
 
 ```bash
-python -m edge.demo --model results/E1_full/weights/best.pt --source 0     # webcam
+python -m edge.demo --model results/E1b/weights/best.pt --source 0          # webcam
 python -m edge.demo --model best.pt --source demo_pics/ --out demo_out/    # picture folder, no window
 ```
 
@@ -256,24 +257,25 @@ Keys: `q` quit, `space` pause, `s` save a frame, `r` start/stop recording, `a` r
 
 ## Project phases
 
-Each phase ends at a class checkpoint. Dates updated Oct 24: recording round 1 moved to Oct 31, and the model freeze moved to Nov 16 because Sudiksha is away Nov 17 to 27.
+Each phase ends at a class checkpoint. The model freeze is Nov 16 because Sudiksha is away Nov 17 to 27. No live animals: all trap trials are staged with props.
 
 | Phase | Dates | Finish line | Status |
 | --- | --- | --- | --- |
-| 1. Get set up | to Oct 23 (CP1) | data split; E0; footage pilot; Pi speed number; servo closes from the stub | data, E0 and laptop demo done; pilot, Pi number and servo still open |
-| 2a. Public data + recording round 1 | to Oct 31 | about 750 labeled prop pictures; E1, E1b, E1c, E2 | E1 done; the rest ready to run |
-| 2b. Fine-tune and fix what fails | Nov 2 to Nov 13 (CP2) | E5 on our prop footage; camera to servo end to end on the bench | |
-| 3. Test and freeze | freeze by Nov 16; CP3 Nov 24 | final numbers; 50+ staged trials | |
+| 1. Get set up | to Oct 23 (CP1) | data split; E0; laptop prototype | done; footage pilot, Pi speed and servo moved to 2b |
+| 2a. Public data | to Oct 31 | E1, E1b, E1c, E2 results | done; prop recording moved to 2b (camera not on the trap yet) |
+| 2b. Fine-tune and fix what fails | Nov 2 to 13 (CP2) | E5 on prop footage; camera to servo end to end on the bench | |
+| 3. Test and freeze | freeze by Nov 16; CP3 Nov 24 | final numbers; 50+ staged prop trials | |
 | 4. Demo | Dec 2 to 8 | live labeling of new pictures; gate acts correctly | |
 
 ### Open items
 
-- [ ] Add all team members as GitHub collaborators
-- [ ] Footage pilot: webcam or camera in the real trap, stuffed cat, tablet photos, empty trap (`edge/demo.py`)
-- [ ] Pi 5 + camera speed test: `python -m edge.bench`
-- [ ] Hardware team closes the servo from `python -m edge.stub`
-- [ ] Decide the camera position, buy an infrared light for night, decide whether the pressure plate is in
-- [ ] Pick a labeling tool and record round 1
+- [ ] Pi set up with the camera, servo and plate (`apply()`, `plate_pressed()` in `edge/run_trap.py`)
+- [ ] Pi speed test with E1b: `python -m edge.bench --model best.pt --export ncnn --imgsz 416`
+- [ ] Camera position in the trap, then draw the zones (`python -m edge.draw_zones`)
+- [ ] Infrared light for night pictures
+- [ ] Footage pilot and labeling round 1 (pick a labeling tool; Roboflow suggested)
+- [ ] Check which "other animal" species are confused with cats
+- [ ] Script to split Christine's videos into frame folders for `vote_sim.py clips`
 
 ### Making sure the model learns cats, not backgrounds
 
@@ -281,10 +283,10 @@ Test pictures always come from camera locations the model never trained on (`spl
 
 ### Code status
 
-- **Run on real data:** data pipeline, E0 and E1 training and evaluation.
-- **Written and tested, not yet run on PACE:** miss analysis, cutoff/vote chooser, seen-location split, E2, cat oversampling, trap-footage import.
+- **Run on real data:** data pipeline; E0, E1, E1b, E1c and E2 training and evaluation; miss analysis; cutoff/vote estimate; seen-location split.
+- **Written and tested, waiting on prop footage:** trap-footage import, E5 training list, `vote_sim.py clips`.
 - **Written and tested on a laptop:** vision/gate interface, hardware stub, laptop demo and recorder, zone drawing, Pi benchmark and main loop (not yet on the Pi).
-- **Still to write:** black-and-white training data (E4), second-camera support.
+- **Still to write:** black-and-white training data (E4), second-camera support, video-to-frames script for real-animal clips.
 - **Placeholders:** the trap and doorway zones in `edge/vision_config.json`, until the camera is mounted.
 
 Every file starts with a short header: what it does, its status, and what still needs to change. Read it before editing.

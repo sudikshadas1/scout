@@ -1,17 +1,18 @@
 """Trains the YOLO26n detector for one experiment and exports it to NCNN for the Pi.
 
-Purpose: One script for every training experiment in the plan (E1, E3, E5 ...), so runs are comparable.
-Status:  E1 ran through the yolo CLI (training/slurm/e1_full.sbatch); E1b/E1c use this script (training/slurm/train_pace.sbatch).
+Purpose: One script for every detector experiment in the plan (E1b, E1c, E5 ...), so runs are comparable.
+Status:  E1 ran through the yolo CLI (training/slurm/e1_full.sbatch); E1b and E1c ran through this script
+         (training/slurm/train_pace.sbatch). E1b is the current best model.
 Later stages (still to add or change):
-  - Phase 2a: E1 (baseline fine-tune), E3 (augmentation choices) run as-is.
-  - Phase 2b: E5 fine-tunes on trap footage and needs data/scout_trap.yaml, which does not exist yet.
-  - If E2 (MobileNetV3 comparison) is run, it needs its own small script; this one is YOLO-only.
+  - Phase 2b: E5 fine-tunes from E1b on public data plus our staged prop footage
+    (data/make_train_list.py --tag e5 writes ~/scratch/scout_data/scout_e5.yaml).
+  - E2 (MobileNetV3 comparison) has its own script, training/train_classifier.py.
 
-    python training/train_yolo.py --name E1 --data-yaml data/scout.yaml
     python training/train_yolo.py --name E1b --epochs 80 --patience 25                      # longer training
     python training/train_yolo.py --name E1c --epochs 80 --patience 25 \
         --data-yaml ~/scratch/scout_data/scout_cat2x.yaml                                    # + cats 2x (make_train_list.py)
-    python training/train_yolo.py --name E5 --weights results/E3/weights/best.pt --data-yaml data/scout_trap.yaml --epochs 50
+    python training/train_yolo.py --name E5 --weights results/E1b/weights/best.pt \
+        --data-yaml ~/scratch/scout_data/scout_e5.yaml --epochs 40
 
 Outputs land in results/<name>/ (weights are git-ignored; metrics and plots are kept).
 """
