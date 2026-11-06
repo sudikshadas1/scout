@@ -133,6 +133,7 @@ training/    training and evaluation (PACE)
   score_pipeline.py                        scores the trap's rules, saves detections
   train_crop_classifier.py                 E8 crop check
   curve.py                                 best epoch, still improving?
+  plot_cat_sizes.py                        chart of cats caught by size, one or more runs
   analyze_errors.py                        why cats are missed
   vote_sim.py                              choose cutoff + K-of-N vote; replay gate on clips
   train_classifier.py                      E2 MobileNetV3 comparison

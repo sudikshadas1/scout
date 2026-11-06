@@ -38,6 +38,8 @@ python training/score_pipeline.py --model "$W" --data ~/scratch/scout_data --spl
     --name "${NAME}_pipeline${TAG}"
 python training/vote_sim.py sweep "results/${NAME}_eval${TAG}/threshold_sweep.csv"
 python training/curve.py "results/$NAME"
+python training/plot_cat_sizes.py "results/${NAME}_analysis${TAG}/summary.json" \
+    --out "results/${NAME}_analysis${TAG}/recall_by_size.png"
 # the new eval set from unseen Wellington cameras, if add_wellington.py has run
 if [ -d ~/scratch/scout_data/wct/yolo/images/val ]; then
     python training/eval.py --model "$W" --data ~/scratch/scout_data/wct --split val --imgsz "$IMGSZ" \

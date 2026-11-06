@@ -18,6 +18,7 @@ from add_wellington import (build_rows, capped, clearest_per_sequence, select, s
                             usable_box, wellington_class, yolo_line)
 from curve import summarize  # noqa: E402
 from manifest_report import period, report, size_name  # noqa: E402
+from plot_cat_sizes import run_label, size_rows  # noqa: E402
 from score_pipeline import best_under, calls_cat, sweep  # noqa: E402
 from train_crop_classifier import crop_pixels, image_scores, pad_box  # noqa: E402
 
@@ -190,3 +191,17 @@ def test_report_counts_cats_by_camera():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+# ---- plot_cat_sizes
+def test_size_rows_reads_summary_in_size_order():
+    s = {"recall_by_size": {"medium": {"recall": 0.89, "hit": 17, "n": 19}, "tiny": {"recall": 0.5, "hit": 9, "n": 18},
+                            "small": {"recall": 0.69, "hit": 118, "n": 171}, "large": {}}}
+    rows = size_rows(s)
+    assert [r[0] for r in rows] == ["tiny", "small", "medium"]
+    assert rows[0][1:3] == (9, 18) and rows[0][3] == pytest.approx(50.0)
+
+
+def test_run_label():
+    assert run_label(Path("results/E1b_analysis/summary.json")) == "E1b"
+    assert run_label(Path("results/E7_analysis416/summary.json")) == "E7 (416)"

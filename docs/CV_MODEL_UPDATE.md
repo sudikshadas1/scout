@@ -18,7 +18,7 @@ Planned: **E3** bigger model (YOLO26s), **E4** black-and-white training, **E5** 
 
 **What E1b's misses show (cutoff 0.25):**
 - 47 of 64 missed cats were found but given the wrong label: other animal 18, raccoon 11, opossum 10, dog 5, squirrel 3.
-- Small and tiny cats are missed most. **The set has no large cats**, and those are what our close-range trap camera should mostly see, so close-range recall is unmeasured.
+- Small and tiny cats are missed most: tiny 50% (9 of 18), small 69% (118 of 171), medium 89% (17 of 19). Chart: `python training/plot_cat_sizes.py results/E1b_analysis/summary.json`; add more summary files to compare runs. **The set has no large cats**, and those are what our close-range trap camera should mostly see, so close-range recall is unmeasured.
 - Only 6 of 22 colour (daytime) pictures of cats were caught, against 74% of black-and-white ones. The sample is small, but matching that would add about 10 cats, or most of the 12 needed for 75%. Training isn't short of daytime cats by the clock (925 of 2,071 Caltech cats), so the cause is still open.
 - Recall ranges from 56% to 79% across the 3 cat locations, which is more than most experiments moved it.
 - Most false positives come from `other_animal`, which is called a cat 12.9% of the time (9 of 70). Raccoon is 4.4%, opossum 3.0%, and dog, squirrel and empty images are 0%. Even the stock model E0 calls 8.6% of `other_animal` cats, so some of these may be true look-alikes.
