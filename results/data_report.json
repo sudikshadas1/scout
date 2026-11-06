@@ -1,0 +1,79 @@
+{
+ "test": {
+  "pictures": 8683,
+  "cats": 694,
+  "cat_cameras": 6,
+  "top_camera": "cct:105",
+  "top_camera_cats": 377,
+  "cats_by_camera": {
+   "cct:105": 377,
+   "cct:78": 252,
+   "cct:40": 44,
+   "cct:46": 12,
+   "cct:130": 5,
+   "cct:60": 4
+  },
+  "cats_by_time": {
+   "dusk_dawn": 143,
+   "day": 372,
+   "night": 179
+  },
+  "cats_by_size": {
+   "small": 451,
+   "tiny": 174,
+   "medium": 54,
+   "large": 15
+  }
+ },
+ "train": {
+  "pictures": 21475,
+  "cats": 2553,
+  "cat_cameras": 8,
+  "top_camera": "cct:38",
+  "top_camera_cats": 1468,
+  "cats_by_camera": {
+   "cct:38": 1468,
+   "ena24:none": 482,
+   "cct:90": 188,
+   "cct:88": 168,
+   "cct:33": 141,
+   "cct:24": 94,
+   "cct:64": 10,
+   "cct:43": 2
+  },
+  "cats_by_time": {
+   "day": 925,
+   "dusk_dawn": 496,
+   "night": 650,
+   "unknown": 482
+  },
+  "cats_by_size": {
+   "small": 1826,
+   "medium": 515,
+   "tiny": 205,
+   "large": 7
+  }
+ },
+ "val": {
+  "pictures": 8211,
+  "cats": 208,
+  "cat_cameras": 3,
+  "top_camera": "cct:100",
+  "top_camera_cats": 121,
+  "cats_by_camera": {
+   "cct:100": 121,
+   "cct:125": 48,
+   "cct:28": 39
+  },
+  "cats_by_time": {
+   "night": 128,
+   "day": 46,
+   "dusk_dawn": 34
+  },
+  "cats_by_size": {
+   "small": 171,
+   "medium": 19,
+   "tiny": 18
+  }
+ }
+}

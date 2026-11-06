@@ -1,4 +1,5 @@
-# Python packages for the code in edge/ on the Raspberry Pi 5 (Raspberry Pi OS 64-bit).
+# Python packages for the code in edge/ on the Raspberry Pi 3 (Raspberry Pi OS 64-bit).
+# Check memory on the first run: ultralytics imports PyTorch, which is heavy for the Pi 3's 1 GB of RAM.
 # Status: not yet installed on the Pi. Hardware libraries (servo, GPIO) get added here when chosen.
 # picamera2 comes preinstalled with the OS:
 # create the venv with --system-site-packages so it is visible.

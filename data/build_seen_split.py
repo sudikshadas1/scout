@@ -2,7 +2,7 @@
 
 Purpose: Plan section 7. Comparing this score with the normal val/test score (new locations) shows how much
          the model relies on backgrounds: a big gap means it learned scenery, not cats. No retraining needed.
-Status:  Written; selection logic tested (tests/test_seen.py). Not yet run on PACE.
+Status:  Written; selection logic tested (tests/test_new_tools.py). Run on E1: cats exist only in bursts already used for training, so seen vs new could not be compared (reported as a limitation).
 How it avoids leaks: it only takes pictures from camera bursts (sequences) that have NO picture in the
          training manifest, so a near-identical frame of the same animal was never trained on.
 

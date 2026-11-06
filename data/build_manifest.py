@@ -12,7 +12,7 @@ Writes <data>/manifest.jsonl, one line per image:
 Boxes are absolute pixels, top-left x/y + width/height (COCO style). download_images.py turns them
 into YOLO label files once the image is on disk.
 
-Rules (see the plan, "Data plan"):
+Rules (see plan section 6):
   * splits come from data/splits.json (location-based, frozen)
   * at most --per-seq frames per camera burst (sequence)
   * train only: each non-cat class capped at --ratio x the cat count; empties kept as

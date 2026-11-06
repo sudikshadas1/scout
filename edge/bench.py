@@ -1,17 +1,20 @@
 """Times every stage (capture, detector, aggregation, gate) on the Pi or a laptop and writes a CSV.
 
-Purpose: Gives the latency numbers the plan needs and checks the Pi 5 can keep up with ~5 fps.
-Status:  Written; tested on a laptop with --source. Not yet run on the Pi 5 with the camera.
+Purpose: E6, the speed test on the Pi 3 (plan sections 9 and 11). Measures what the Raspberry Pi 3 can run. The vote needs 3 frames inside the 5 s decision limit, so one
+         frame, camera included, must take under about 1.6 s (0.67 s for the 2 s aim). This sets the model and imgsz.
+Status:  Written; tested on a laptop with --source. Not yet run on the Pi 3.
 Later stages (still to add or change):
-  - Phase 1: first run on the Pi 5 with stock yolo26n (NCNN, 416).
-  - Phase 2a: rerun with our trained model; try imgsz 320 if too slow.
+  - First run on the Pi 3: E1b (NCNN) at 416, then 320 if too slow. This decides the picture size and whether E3 fits.
+  - Rerun with our trained model at the chosen size.
   - Phase 2a: a recording script for trap footage can reuse the Camera class here (not written yet).
 
 Stages logged per frame: capture, detector (preprocess / inference / postprocess), vision
 aggregation, gate controller, total. Writes a CSV and prints median / p95 in milliseconds.
 
-On the Pi 5 with the camera:
-    python -m edge.bench --model yolo26n.pt --export ncnn --imgsz 416 --runs 200
+Convert on a laptop or PACE, not on the Pi 3 (it has only 1 GB of memory), then copy the folder over:
+    python -m edge.bench --model best.pt --export ncnn --imgsz 416
+On the Pi 3 (add --source some_cat.jpg to test before the camera is ready):
+    python -m edge.bench --model best_ncnn_model --imgsz 416 --runs 200
 Anywhere, with a test image:
     python -m edge.bench --model yolo26n.pt --source some_cat.jpg --runs 50
 """
@@ -19,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import statistics
 import time
 from pathlib import Path
@@ -58,7 +62,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="yolo26n.pt")
     ap.add_argument("--export", choices=["ncnn", "none"], default="none",
-                    help="export .pt to NCNN first (do this on the Pi or copy the folder over)")
+                    help="export .pt to NCNN first (on a laptop or PACE, then copy the folder to the Pi 3)")
     ap.add_argument("--imgsz", type=int, default=416)
     ap.add_argument("--source", help="image file instead of the Pi camera")
     ap.add_argument("--camera", type=int, default=0)
@@ -71,6 +75,9 @@ def main() -> None:
     if args.export == "ncnn" and model_path.endswith(".pt"):
         from ultralytics import YOLO
         model_path = YOLO(model_path).export(format="ncnn", imgsz=args.imgsz)
+        if not args.source and importlib.util.find_spec("picamera2") is None:
+            print(f"exported {model_path}; copy it to the Pi 3 and time it there")
+            return
     detector = Detector(model_path, imgsz=args.imgsz)
     cam = Camera(args.source, index=args.camera)
     vision = VisionAggregator.from_config()
@@ -118,7 +125,7 @@ def main() -> None:
             xs = [r[k] for r in rows]
             print(f"  {k:15s} median {statistics.median(xs):7.1f}   p95 {pct(xs, 95):7.1f}")
     fps = 1000 / statistics.median(r["total_ms"] for r in rows)
-    print(f"  ~{fps:.1f} decisions/s; 5-frame vote ≈ {5000 / fps:.0f} ms")
+    print(f"  ~{fps:.1f} frames/s; {vision.K}-of-{vision.N} vote ≈ {vision.K / fps:.1f} s (limit 5 s, aim 2 s)")
 
 
 if __name__ == "__main__":

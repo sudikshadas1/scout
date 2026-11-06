@@ -1,8 +1,8 @@
-"""Adds one labeled recording session of OUR trap footage to the dataset (for E5 and the real pass/fail test).
+"""Adds one labeled recording session of OUR trap footage to the dataset (for E5 and the staged trial checks).
 
-Purpose: Plan sections 10 and 12. The pass criterion is measured on our own trap footage, so labeled sessions
+Purpose: Plan sections 10 and 12. Staged prop footage checks the camera, zones, vote and gate (never accuracy), so labeled sessions
          need to land in a folder the training and eval scripts already understand.
-Status:  Written; class mapping and copy tested (tests/test_trap_footage.py). Needs a real labeling export.
+Status:  Written; class mapping and copy tested (tests/test_new_tools.py). Needs a real labeling export.
 
 Input: a YOLO-format export from the labeling tool (Roboflow "YOLO" export, CVAT "YOLO 1.1", Label Studio
 "YOLO"). Images and .txt labels can sit anywhere under the folder; class names come from data.yaml,

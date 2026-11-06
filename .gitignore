@@ -13,6 +13,11 @@ data/yolo/
 *.png
 *.zip
 *.tar.gz
+*.mp4
+*.mov
+*.avi
+*.mkv
+backyard_camera/
 
 # experiment outputs: keep metrics, not weights
 results/*/weights/

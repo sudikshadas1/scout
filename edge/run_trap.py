@@ -1,7 +1,8 @@
 """Main loop on the Pi: camera -> detector -> vision report -> gate controller -> hardware.
 
 Purpose: The integration point where model and hardware code meet.
-Status:  Loop runs on a laptop with --source. Hardware hooks at the bottom are placeholders.
+Status:  Gate decision (plan section 4): closes only on a cat in the trap plus a pressed plate, so run with --plate.
+         Loop runs on a laptop with --source. Hardware hooks at the bottom are placeholders.
 Later stages (still to add or change):
   - Hardware team: fill in pir_motion(), plate_pressed() and apply(status) (servo, LEDs, alerts).
   - Phase 2b: add logging of frames/reports to disk for staged trials and debugging.
@@ -10,7 +11,7 @@ Later stages (still to add or change):
 This is the integration point. The model team owns the vision steps; the hardware team fills in
 the three hardware hooks at the bottom (PIR, pressure plate, gate actuator / status).
 
-    python -m edge.run_trap --model best_ncnn_model --imgsz 416
+    python -m edge.run_trap --model best_ncnn_model --imgsz 416 --plate
     python -m edge.run_trap --model yolo26n.pt --source test_cat.jpg   # laptop dry run
 """
 from __future__ import annotations
@@ -75,7 +76,7 @@ def main() -> None:
     ap.add_argument("--model", default="yolo26n.pt")
     ap.add_argument("--imgsz", type=int, default=416)
     ap.add_argument("--source", help="image file instead of the Pi camera")
-    ap.add_argument("--fps", type=float, default=5.0)
+    ap.add_argument("--fps", type=float, default=5.0, help="upper limit; the Pi 3 may run slower")
     ap.add_argument("--frames", type=int, default=None)
     ap.add_argument("--plate", action="store_true")
     args = ap.parse_args()

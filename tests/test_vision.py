@@ -30,6 +30,17 @@ def test_geometry():
     assert box_touches(CAT_DOOR.box, DOOR) and not box_touches(CAT_IN.box, DOOR)
 
 
+def test_known_limit_large_close_cat_is_not_in_trap():
+    # Close-up cats reach past the trap zone, so the bottom-edge rule misses them and the doorway check fires.
+    # The trap camera will mostly see these. Change this test when the zone rule changes, with the camera mounted.
+    v = VisionAggregator(N=5, K=3, trap_zone=[(0.35, 0), (1, 0), (1, 1), (0.35, 1)], doorway_zone=[(0, 0), (0.2, 0), (0.2, 1), (0, 1)],
+                         thresholds={"cat": 0.15})
+    close = Detection("cat", 0.9, (0.1, 0.1, 0.9, 0.95))
+    for _ in range(5):
+        r = v.update([close])
+    assert not r.cat_in_trap and r.animal_in_doorway
+
+
 def test_cat_in_trap_after_k_frames():
     v = make()
     reports = [v.update([CAT_IN]) for _ in range(4)]

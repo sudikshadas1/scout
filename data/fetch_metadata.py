@@ -1,7 +1,7 @@
 """Downloads only the label/metadata JSONs for Caltech Camera Traps and ENA24 from LILA (about 50 MB, no images).
 
 Purpose: First step of the data pipeline: lets us count species and make splits before downloading any images.
-Status:  Written. Not yet run against LILA (needs PACE ICE or a laptop with internet).
+Status:  Written and run on PACE.
 Later stages (still to add or change):
   - If a LILA URL has moved, update FILES below.
   - Optional: add the MegaDetector results file here if we use MD pseudo-boxes (build_manifest.py --md).

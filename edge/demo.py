@@ -1,6 +1,6 @@
 """Laptop prototype: camera or pictures -> detector -> boxes, zones, VisionReport and a simulated gate on screen.
 
-Purpose: Step 1 of the plan ("prototype on a laptop"), the live view for the footage pilot, and the base of the
+Purpose: A laptop prototype, the live view for the footage pilot, and the base of the
          Demo Day screen. Also saves raw frames, so it doubles as the recorder for our own trap footage.
 Status:  Written; drawing/report code tested without a model (tests/test_demo.py).
 Later stages (still to add or change):

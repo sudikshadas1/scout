@@ -1,8 +1,8 @@
 """Draw the trap zone and doorway zone on a frame from the mounted camera and save them to vision_config.json.
 
-Purpose: Plan section 13, Phase 2b step 3. The zones decide "cat past the doorway" vs "cat in the doorway",
+Purpose: Plan section 13, Phase 2b step 4. The zones decide "cat past the doorway" vs "cat in the doorway",
          so they must match where the camera actually is. Redraw them whenever the camera moves.
-Status:  Written; polygon/config writing tested (tests/test_trap_footage.py). Needs a frame from the real mount.
+Status:  Written; polygon/config writing tested (tests/test_new_tools.py). Needs a frame from the real mount.
 
     python -m edge.draw_zones --image pilot/s1/frame.jpg
     python -m edge.draw_zones --image frame.jpg --trap 0.3,0 1,0 1,1 0.3,1 --door 0,0 0.2,0 0.2,1 0,1   # no GUI

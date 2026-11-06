@@ -1,6 +1,6 @@
 """Explains WHY cats are missed: what each missed cat was called instead, how big it was, day or night, where.
 
-Purpose: E1 catches 132 of 208 val cats at threshold 0.05 (63.5%, target 75%). Before changing training we need
+Purpose: E1b catches 144 of 208 val cats at threshold 0.25 (69.2%, goal at least 75%). Before changing training we need
          to know which kind of miss dominates, because each one has a different fix:
            wrong_class   the box is found but labelled raccoon/opossum/...  -> class balance, cls loss, more cats
            low_conf_cat  a cat box exists but under the threshold         -> threshold choice, longer training
